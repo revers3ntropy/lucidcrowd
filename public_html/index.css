@@ -1,0 +1,546 @@
+/* vietnamese */
+@font-face {
+    font-family: 'Quicksand';
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    src: url(https://fonts.gstatic.com/s/quicksand/v24/6xK-dSZaM9iE8KbpRA_LJ3z8mH9BOJvgkKEo58m-xDwxUD2GF9Zc.woff) format('woff');
+    unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+    font-family: 'Quicksand';
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    src: url(https://fonts.gstatic.com/s/quicksand/v24/6xK-dSZaM9iE8KbpRA_LJ3z8mH9BOJvgkKEo58i-xDwxUD2GF9Zc.woff) format('woff');
+    unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+    font-family: 'Quicksand';
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    src: url(https://fonts.gstatic.com/s/quicksand/v24/6xK-dSZaM9iE8KbpRA_LJ3z8mH9BOJvgkKEo58a-xDwxUD2GFw.woff) format('woff');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+    --bg: #232323;
+
+    --border-dark: #777;
+    --border: #666;
+    --border-light: #555;
+    --border-lighter: #444;
+
+    --text-colour: white;
+    --text-light: #c4c4c4;
+    --text-lighter: #b4b4b4;
+    --warning-colour: red;
+    --red-border: #750e0e;
+
+    --nav-colour: #1c1c1c;
+
+    --nav-height: 80px;
+
+    --global-transition: 200ms !important;
+}
+
+[data-theme="light"] {
+    --bg: #efefef;
+
+    --border-dark: #aaa;
+    --border: #bbb;
+    --border-light: #ccc;
+    --border-lighter: #ddd;
+
+    --text-colour: black;
+    --text-light: #3b3b3b;
+    --text-lighter: #606060;
+    --warning-colour: red;
+    --red-border: #750e0e;
+
+    --nav-colour: #cccccc;
+}
+
+[data-transitioning="yes"] {
+    --global-transition: 500ms !important;
+}
+
+* {
+    font-family: 'Quicksand', sans-serif;
+    transition: var(--global-transition) !important;
+    color: var(--text-colour);
+}
+
+html {
+    scroll-behavior: smooth;
+    height: 100%;
+    background: var(--bg);
+    width: 100vw;
+}
+
+body {
+    margin: 0;
+    height: 100%;
+    width: 100vw;
+}
+
+main {
+    min-height: calc(100% - var(--nav-height));
+    text-align: center;
+    margin: 10px 20px;
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+.center {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+p {
+    color: var(--text-colour);
+}
+
+.warning {
+    color: var(--warning-colour);
+}
+
+.button {
+    background-color: transparent;
+    border-color: var(--border);
+}
+
+.button:disabled {
+    color: var(--text-light);
+}
+
+.button:hover {
+    border-color: var(--border-dark);
+}
+
+.button:hover:disabled {
+    color: rgb(130, 130, 130);
+}
+
+div.light-container {
+    background-color: transparent;
+    border-bottom: 2px solid var(--border-lighter);
+    border-radius: 0;
+    text-align: center;
+
+    padding: 10px 10px;
+    margin: 10px;
+}
+
+div.page{
+    overflow: auto;
+    text-align: center;
+    padding: 5px 20px;
+    margin: 15px;
+}
+
+input.text-box{
+    border-bottom: 2px solid var(--border-light);
+    border-radius: 0;
+}
+
+.slider {
+    background-color: var(--border);
+}
+
+.slider:before {
+    background-color: transparent;
+}
+
+input:checked + .slider {
+    background-color: #2196F3;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #2196F3;
+}
+
+div.progress-bar {
+    background-color: var(--text-colour);
+}
+
+div.outer-progress-bar {
+    background-color: transparent;
+}
+
+.rainbow {
+    background: linear-gradient(to bottom right, green, cyan, blue);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: rgba(120, 120, 120, 0.15);
+}
+
+/* The switch - the box around the slider */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* The slider */
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: transparent;
+}
+
+input:checked + .slider {
+    background-color: #2196F3;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+    -webkit-transform: translateX(26px);
+    -ms-transform: translateX(26px);
+    transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+/* -------------- Dividers, containers etc ---------------- */
+
+div.columns {
+    -webkit-column-count: 3;
+    -webkit-column-gap: 2px;
+    column-gap: 2px;
+    column-count: 3;
+    text-align: center;
+    overflow: hidden;
+}
+
+div.column-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+div.sidebar {
+    width: 20%;
+    height: 75%;
+    min-width: 125px;
+    max-width: 300px;
+    overflow: scroll;
+    position: fixed !important;
+}
+
+div.progress-bar {
+    width:   100%;
+    z-index: 3;
+    margin:  0;
+    border:  none;
+}
+
+div.outer-progress-bar {
+    padding: 0;
+    z-index: 2;
+    border:  none;
+}
+
+div.left-half {
+    width: 50%;
+    float: left;
+    text-align: left;
+}
+
+div.right-half {
+    width: 50%;
+    float: right;
+    text-align: right;
+}
+
+/* SVG ICONS */
+.icon {
+    background: none;
+    border: none;
+    text-decoration: none;
+}
+
+.icon > svg {
+    height: 40px;
+    width: 40px;
+    fill: var(--text-light);
+    border: none;
+}
+
+.icon:hover > svg {
+    cursor: pointer;
+    transform: scale(1.1);
+}
+
+.icon-large > svg {
+    height: 100px;
+    width: 100px;
+}
+
+.icon-small > svg {
+    height: 20px;
+    width: 20px;
+}
+
+/* navbar */
+nav {
+    display: flex;
+    flex-direction: column;
+    height: var(--nav-height);
+}
+
+nav ul {
+    list-style-type: none;
+    overflow: hidden;
+    text-align: center;
+
+    background-color: rgba(255, 255, 255, 0);
+    border-style: solid;
+    border-color: rgba(225, 225, 225, 0);
+    border-width: 2px;
+    border-radius: 0 0 10px 10px;
+
+    padding: 0;
+    margin: 0 15px 15px;
+
+    display: flex;
+    justify-content: center;
+}
+
+nav li {
+    float: left;
+    margin: 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+nav li .label {
+    transform: scale(0);
+    position: absolute;
+    display: inline-block;
+}
+
+nav li:hover .label {
+    transform: scale(1) translateY(40px);
+    background: var(--border-lighter);
+    border-radius: 5px;
+    padding: 6px;
+    z-index: 1000;
+}
+
+button {
+    background: transparent;
+    border: 2px solid var(--border-light);
+    margin: 0.25em 0.25em 0.25em 0;
+    padding: 0.75em 1.5em;
+    font-size: 16px;
+}
+
+button:hover {
+    background: var(--border);
+    transform: translateY(2px);
+    cursor: pointer;
+}
+
+/* hover underline links */
+main a, footer a {
+    color: var(--text-light);
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 18px;
+    position: relative;
+    display: inline-block;
+}
+
+main a:after,
+footer a:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 1px;
+    transform: scaleX(0);
+    background: var(--text-light);
+    transition: transform 0.3s !important;
+}
+
+main a:hover:after,
+footer a:hover:after {
+    transform: scaleX(1);
+}
+
+a.card:hover {
+    text-decoration: none;
+    background: var(--border-light);
+}
+
+a.card:hover:after,
+a.icon:hover:after {
+    transform: scaleX(0);
+}
+
+a.card.icon:hover svg {
+    transform: scale(1);
+}
+
+a.card:hover img {
+    transform: scale(0.95);
+}
+
+.grid-center {
+    display: grid;
+    place-items: center;
+}
+
+.card {
+    border: 1px solid var(--border-light);
+    min-height: 300px;
+    border-radius: 20px;
+    padding: 20px;
+    aspect-ratio: calc(1/1.61803398875);
+    display: grid;
+    place-items: center;
+    margin: 20px;
+}
+
+h3 {
+    font-size: 20px;
+    text-align: center;
+}
+h2 {
+    font-size: 30px;
+    text-align: center;
+}
+h1 {
+    font-size: 50px;
+    text-align: center;
+}
+
+button.icon:hover {
+    background: transparent;
+}
+
+input {
+    background: var(--bg);
+    border: none;
+    border-radius: 0;
+    border-bottom: 2px solid var(--border-dark);
+    outline: none;
+    margin: 5px;
+    font-size: 18px;
+}
+
+/* cool button */
+.cool-button-wrapper:before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background-color: var(--border-dark);
+    transform: scaleY(0);
+    transform-origin: bottom left;
+    transition: transform 0.3s;
+}
+.cool-button-wrapper:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 3px;
+    height: 100%;
+    background-color: var(--border-dark);
+    transform: scaleY(0);
+    transform-origin: top right;
+    transition: transform 0.3s;
+}
+.cool-button-wrapper .cool-button {
+    padding: 10px;
+}
+.cool-button-wrapper .cool-button:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: var(--border-dark);
+    transform: scaleX(0);
+    transform-origin: top left;
+    transition: transform 0.3s;
+}
+.cool-button-wrapper .cool-button:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 100%;
+    height: 3px;
+    background-color: var(--border-dark);
+    transform: scaleX(0);
+    transform-origin: bottom right;
+    transition: transform 0.3s;
+}
+.cool-button-wrapper:hover:before,
+.cool-button-wrapper:hover:after {
+    transform: scaleY(1);
+}
+.cool-button-wrapper:hover .cool-button:before,
+.cool-button-wrapper:hover .cool-button:after {
+    transform: scaleX(1);
+}
+.cool-button {
+    background: var(--border-lighter);
+    border: none;
+}
+.cool-button:hover {
+    transform: none;
+    background: transparent;
+}
+.cool-button-wrapper {
+    position: relative;
+    display: inline-block;
+}
