@@ -43,34 +43,10 @@
     --nav-colour: #1c1c1c;
 
     --nav-height: 80px;
-
-    --global-transition: 200ms !important;
-}
-
-[data-theme="light"] {
-    --bg: #efefef;
-
-    --border-dark: #aaa;
-    --border: #bbb;
-    --border-light: #ccc;
-    --border-lighter: #ddd;
-
-    --text-colour: black;
-    --text-light: #3b3b3b;
-    --text-lighter: #606060;
-    --warning-colour: red;
-    --red-border: #750e0e;
-
-    --nav-colour: #cccccc;
-}
-
-[data-transitioning="yes"] {
-    --global-transition: 500ms !important;
 }
 
 * {
     font-family: 'Quicksand', sans-serif;
-    transition: var(--global-transition) !important;
     color: var(--text-colour);
 }
 
