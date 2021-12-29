@@ -4,13 +4,32 @@
     <meta charset="UTF-8">
     <title>Sign Up</title>
     <script defer src="../main.js"></script>
+    <meta name="viewport" content="width=device-width">
 </head>
 
 <body>
 <nav></nav>
 <main>
-
+    <div>
+        <label>
+            Username
+            <input id="usr">
+        </label>
+        <button id="go">Go</button>
+    </div>
 </main>
 <footer></footer>
 </body>
 </html>
+<script>
+    document.getElementById('go').onclick = async () => {
+		const res = await fetch(SITE_ROOT+'/api/create-account.php?username=' + document.getElementById('usr').value);
+		const id = await res.text();
+		if (Number.isInteger(id)) {
+			console.log('error occurred making account');
+			return;
+        }
+		localStorage.id = id;
+		window.location.replace(SITE_ROOT);
+	};
+</script>
