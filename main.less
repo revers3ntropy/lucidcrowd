@@ -1,5 +1,12 @@
-@bg: #a0a0a0;
+/* dark mode by default */
+:root, body.dark {
+    --bg: rgb(54, 54, 54);
+}
+
+body.light {
+
+}
 
 body {
-  background-color: @bg;
+    background-color: var(--bg);
 }

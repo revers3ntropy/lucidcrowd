@@ -1,7 +1,10 @@
 const { exec } = require("child_process");
 const fs = require('fs');
 const p = require('path');
-const minify = require('html-minifier').minify;
+const minifyHTML = require('html-minifier').minify;
+const uglifyJS = require('uglify-js').minify;
+const performanceNow = require("performance-now");
+const now = () => Math.round(performanceNow());
 
 const HEAD = fs.readFileSync('./header.html');
 const FOOT = fs.readFileSync('./footer.html');
@@ -23,6 +26,8 @@ function run (cmd) {
 }
 
 async function buildHTML (dir) {
+	const start = now();
+
 	const paths = fs.readdirSync('./src/' + dir);
 
 	const distPath = p.join('./dist/public_html', dir);
@@ -35,7 +40,7 @@ async function buildHTML (dir) {
 		const fullPath = './src/' + dir + "/" + path;
 
 		if (fs.statSync(fullPath).isDirectory()) {
-			buildHTML(dir + "/" + path);
+			await buildHTML(dir + "/" + path);
 			continue;
 		}
 
@@ -49,14 +54,28 @@ async function buildHTML (dir) {
 
 		else if (path === 'index.less') {
 			await run (`lessc ${fullPath} ${distPath}/index.css`);
-			css = '<style>' + fs.readFileSync(`${distPath}/index.css`) + '</style>';
+			const fileContent = fs.readFileSync(`${distPath}/index.css`);
 			fs.unlinkSync(`${distPath}/index.css`);
+
+			css = '<style>' + fileContent + '</style>';
 		}
 
 		else if (path === 'index.ts') {
 			await run (`tsc --outDir ${distPath} ${fullPath}`);
-			js = '<script defer>' + fs.readFileSync(`${distPath}/index.js`) + '</script>';
+			const fileContent = String(fs.readFileSync(`${distPath}/index.js`));
 			fs.unlinkSync(`${distPath}/index.js`);
+
+			const minified = uglifyJS(fileContent, {});
+
+			if (minified.error) {
+				console.error(`UglifyJS error: ${minified.error}`);
+				return;
+			}
+			if (minified.warnings) {
+				console.log(minified.warnings);
+			}
+
+			js = '<script defer>' + minified.code + '</script>';
 		}
 	}
 
@@ -67,7 +86,7 @@ async function buildHTML (dir) {
 	// main.ts, main.less
 	js += '<script>' + MAIN + '</script>';
 
-	const final = minify(html + css + js, {
+	const final = minifyHTML(html + css + js, {
 		removeAttributeQuotes: false,
 		removeComments: true,
 		removeRedundantAttributes: false,
@@ -78,12 +97,15 @@ async function buildHTML (dir) {
 		collapseWhitespace: true
 	});
 
-	console.log(`Built '${distPath}'`);
+	console.log(`Built '${distPath}' in ${now() - start} ms`);
 
 	fs.writeFileSync(distPath + '/index.html', final);
 }
 
 async function main () {
+
+	const start = now();
+
 	await run('webpack --config webpack.config.js');
 	if (!fs.existsSync('./webpack_out.js')) {
 		console.error('NO WEBPACK OUTPUT!');
@@ -92,6 +114,8 @@ async function main () {
 	MAIN = fs.readFileSync('./webpack_out.js');
 	fs.unlinkSync('./webpack_out.js');
 	await buildHTML('');
+
+	console.log(`Built project in ${now() - start} ms`);
 }
 
 main();
