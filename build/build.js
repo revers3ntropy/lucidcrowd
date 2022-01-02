@@ -110,9 +110,31 @@ async function buildHTML (dir) {
 	fs.writeFileSync(distPath + '/index.html', final);
 }
 
+async function upload () {
+	const start = now();
+
+
+	const paths = fs.readdirSync('./dist/');
+
+	for (const path of paths) {
+		if (fs.statSync('./dist/' + path).isDirectory()) {
+			await run(
+				`sshpass -f './build/sshPass.txt' scp -r /home/joseph/Projects/lucidcrowd/dist/${path} lucid@lucidcrowd.uk:~/`);
+			continue;
+		}
+		await run(
+			`sshpass -f './build/sshPass.txt' scp /home/joseph/Projects/lucidcrowd/dist/${path} lucid@lucidcrowd.uk:~/`);
+	}
+
+
+	console.log(`Upload took ${now() - start} ms`)
+}
+
 async function main () {
 
 	const start = now();
+
+	await run ('cd ..');
 
 	await run('webpack --config webpack.config.js');
 	if (!fs.existsSync('./webpack_out.js')) {
@@ -123,9 +145,12 @@ async function main () {
 	fs.unlinkSync('./webpack_out.js');
 	await buildHTML('');
 
-	console.log(`Built project in ${now() - start} ms`);
 	console.log(`TS compilation took ${JSTime} ms`);
 	console.log(`LESS compilation took ${CSSTime} ms`);
+
+	await upload();
+
+	console.log(`\nBuilt project and uploaded in ${now() - start} ms`);
 }
 
 main();
