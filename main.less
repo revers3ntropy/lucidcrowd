@@ -1,12 +1,51 @@
+@nav-height: 50px;
+
 /* dark mode by default */
 :root, body.dark {
     --bg: rgb(54, 54, 54);
 }
 
 body.light {
-
+    --bg: rgb(234, 234, 234);
 }
 
 body {
     background-color: var(--bg);
 }
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-direction: column;
+    height: @nav-height;
+
+    div {
+        display: flex;
+        span {
+
+        }
+    }
+}
+
+.icon {
+    background: none;
+    border: none;
+    text-decoration: none;
+
+    svg {
+        height: 40px;
+        width: 40px;
+        fill: var(--text-light);
+        border: none;
+
+        &:hover {
+            transform: scale(1.1);
+        }
+    }
+
+    &:hover {
+        cursor: pointer;
+    }
+}
+

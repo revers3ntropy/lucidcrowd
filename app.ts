@@ -1,10 +1,23 @@
+// TS
+import './types.d.ts';
+
+// LESS
 import './main.less';
 
-import './types.d.ts';
+// ALPINE
 // alpine types. Alpine object is already a property of window
 import Alpine from 'alpinejs';
-window.Alpine = Alpine;
+import 'alpinejs';
+
+Alpine.store('theme', {
+    init: function () {
+        localStorage.theme ??= 'dark';
+    },
+    value: localStorage.theme,
+    toggle: function () {
+        localStorage.theme = this.value === 'dark' ? 'light' : 'dark';
+        this.value = localStorage.theme;
+    }
+});
 
 Alpine.start();
-
-Alpine.store('theme', 'dark');

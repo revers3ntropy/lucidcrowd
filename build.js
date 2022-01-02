@@ -10,6 +10,9 @@ const HEAD = fs.readFileSync('./header.html');
 const FOOT = fs.readFileSync('./footer.html');
 let MAIN = '';
 
+let JSTime = 0;
+let CSSTime = 0;
+
 /**
  * @param {string} cmd
  * @returns {Promise<void>}
@@ -53,14 +56,18 @@ async function buildHTML (dir) {
 		}
 
 		else if (path === 'index.less') {
+			const start = now();
 			await run (`lessc ${fullPath} ${distPath}/index.css`);
 			const fileContent = fs.readFileSync(`${distPath}/index.css`);
 			fs.unlinkSync(`${distPath}/index.css`);
 
 			css = '<style>' + fileContent + '</style>';
+			CSSTime += now() - start;
 		}
 
 		else if (path === 'index.ts') {
+			const start = now();
+
 			await run (`tsc --outDir ${distPath} ${fullPath}`);
 			const fileContent = String(fs.readFileSync(`${distPath}/index.js`));
 			fs.unlinkSync(`${distPath}/index.js`);
@@ -76,6 +83,7 @@ async function buildHTML (dir) {
 			}
 
 			js = '<script defer>' + minified.code + '</script>';
+			JSTime += now() - start;
 		}
 	}
 
@@ -116,6 +124,8 @@ async function main () {
 	await buildHTML('');
 
 	console.log(`Built project in ${now() - start} ms`);
+	console.log(`TS compilation took ${JSTime} ms`);
+	console.log(`LESS compilation took ${CSSTime} ms`);
 }
 
 main();
