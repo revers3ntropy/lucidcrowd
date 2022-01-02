@@ -1,12 +1,42 @@
 @nav-height: 50px;
 
+@fast-transition: 100ms;
+@transition: 200ms;
+@slow-transition: 400ms;
+
 /* dark mode by default */
-:root, body.dark {
-    --bg: rgb(54, 54, 54);
+:root, .dark {
+    --bg: #232323;
+
+    --border-dark: #777;
+    --border: #666;
+    --border-light: #555;
+    --border-lighter: #444;
+
+    --text: white;
+    --text-light: #c4c4c4;
+    --text-lighter: #b4b4b4;
+
+    --nav: #1c1c1c;
 }
 
-body.light {
-    --bg: rgb(234, 234, 234);
+.light {
+    --bg: #efefef;
+
+    --border-dark: #aaa;
+    --border: #bbb;
+    --border-light: #ccc;
+    --border-lighter: #ddd;
+
+    --text: black;
+    --text-light: #3b3b3b;
+    --text-lighter: #606060;
+
+    --nav: #cccccc;
+}
+
+* {
+    transition: @fast-transition;
 }
 
 body {
@@ -22,6 +52,7 @@ nav {
 
     div {
         display: flex;
+
         span {
 
         }
