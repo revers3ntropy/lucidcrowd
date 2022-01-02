@@ -36,3 +36,16 @@ Alpine.store('icons', {
 });
 
 Alpine.start();
+
+window.api = async (path, body) => {
+    const res = await (await fetch('')).text();
+
+    return {
+        error: 'API not implemented',
+        res: {}
+    };
+}
+
+window.isSignedIn = async () => {
+    return false;
+}

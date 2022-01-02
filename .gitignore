@@ -5,3 +5,4 @@
 /dist/
 /server/.idea/
 /build/sshPass.txt
+/server/.env

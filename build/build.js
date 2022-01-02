@@ -92,7 +92,7 @@ async function buildHTML (dir) {
 	}
 
 	// main.ts, main.less
-	js += '<script>' + MAIN + '</script>';
+	js = '<script>' + MAIN + '</script>' + js;
 
 	const final = minifyHTML(html + css + js, {
 		removeAttributeQuotes: false,
@@ -108,6 +108,11 @@ async function buildHTML (dir) {
 	console.log(`Built '${distPath}' in ${now() - start} ms`);
 
 	fs.writeFileSync(distPath + '/index.html', final);
+}
+
+async function cpServer () {
+	await run(`cp ./server/app.py ./dist/server/app.py`);
+	await run(`cp ./server/connectmysql.py ./dist/server/connectmysql.py`);
 }
 
 async function upload () {
@@ -147,6 +152,8 @@ async function main () {
 
 	console.log(`TS compilation took ${JSTime} ms`);
 	console.log(`LESS compilation took ${CSSTime} ms`);
+
+	await cpServer();
 
 	await upload();
 
