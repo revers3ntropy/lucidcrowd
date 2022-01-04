@@ -1,19 +1,31 @@
 const { exec } = require("child_process");
 const fs = require('fs');
 const p = require('path');
+
+// uglify
 const minifyHTML = require('html-minifier').minify;
 const uglifyJS = require('uglify-js').minify;
+
+// beatify
+const chalk = require('chalk');
+const Confirm = require('prompt-confirm');
+const cliProgress = require('cli-progress');
+
+// timings
 const performanceNow = require("performance-now");
 const now = () => Math.round(performanceNow());
 
-const HEAD = fs.readFileSync('./header.html');
-const FOOT = fs.readFileSync('./footer.html');
+
+const
+	HEAD = fs.readFileSync('./header.html'),
+	FOOT = fs.readFileSync('./footer.html'),
+	STAGING = !process.argv.includes('--prod'),
+	timings = {
+		'Compile TS': 0,
+		'Compile LESS': 0
+	};
+
 let MAIN = '';
-
-let JSTime = 0;
-let CSSTime = 0;
-
-const STAGING = !process.argv.includes('--prod');
 
 /**
  * @param {string} cmd
@@ -67,14 +79,14 @@ async function buildHTML (dir) {
 			const start = now();
 			await run (`lessc ${fullPath} ${distPath}/index.css`);
 			if (!fs.existsSync(`${distPath}/index.css`)) {
-				console.log(`FILE '${distPath}/index.css' REQUIRED!`)
+				console.log(chalk.red`FILE '${distPath}/index.css' REQUIRED!`)
 				continue;
 			}
 			const fileContent = fs.readFileSync(`${distPath}/index.css`);
 			fs.unlinkSync(`${distPath}/index.css`);
 
 			css = '<style>' + fileContent + '</style>';
-			CSSTime += now() - start;
+			timings['Compile LESS'] += now() - start;
 		}
 
 		else if (path === 'index.ts') {
@@ -82,7 +94,7 @@ async function buildHTML (dir) {
 
 			await run (`tsc --outDir ${distPath} ${fullPath}`);
 			if (!fs.existsSync(`${distPath}/index.js`)) {
-				console.log(`FILE '${distPath}/index.js' REQUIRED!`)
+				console.log(chalk.red`FILE '${distPath}/index.js' REQUIRED!`)
 				continue;
 			}
 			const fileContent = String(fs.readFileSync(`${distPath}/index.js`));
@@ -99,7 +111,7 @@ async function buildHTML (dir) {
 			}
 
 			js = '<script defer>' + minified.code + '</script>';
-			JSTime += now() - start;
+			timings['Compile TS'] += now() - start;
 		}
 	}
 
@@ -125,7 +137,7 @@ async function buildHTML (dir) {
 
 	let time = now() - start - subDirTime;
 
-	console.log(`Built '${distPath}' in ${time} ms`);
+	timings[`'${distPath}' front-end path`] = time;
 
 	return time;
 }
@@ -142,9 +154,13 @@ async function cpServer () {
 			continue;
 		}
 		await run(`cp ./server/${path} ${distPath}`);
+		if (STAGING) {
+			// replace the port of the server with the staging one
+			await run(`sed -i 's/56786/56787/g' ${distPath}/${path}`);
+		}
 	}
 
-	console.log(`Built Flask Server in ${now() - start} ms`);
+	timings[`Build Flask Server`] = now() - start;
 }
 
 async function upload () {
@@ -164,47 +180,128 @@ async function upload () {
 	}
 
 
-	console.log(`Upload took ${now() - start} ms`)
+	timings['Upload'] = now() - start;
 }
 
-async function restartServer () {
+//src: https://stackoverflow.com/questions/1069666/sorting-object-property-by-values
+function sortObjectEntries (obj) {
+	let sortable = [];
+	for (let vehicle in obj) {
+		sortable.push([vehicle, obj[vehicle]]);
+	}
 
+	sortable.sort((a, b) => a[1] - b[1]);
+
+	let objSorted = {}
+	sortable.forEach(function(item){
+		objSorted[item[0]] = item[1]
+	});
+
+	return objSorted
+}
+
+function logTimings () {
+	const namePadding = 60;
+	const timePadding = 10;
+
+	let width = namePadding + timePadding + 10;
+
+	console.log('');
+	console.log(` Timings `.padStart(width/2 + 4, '-').padEnd(width, '-'));
+
+	const sortedTimings = sortObjectEntries(timings);
+
+	for (let key in sortedTimings) {
+		let time = sortedTimings[key];
+		let unit = 'ms';
+		let decimalPlaces = 0;
+
+		if (time > 1000) {
+			time /= 1000;
+			unit = 's ';
+			decimalPlaces = 2;
+		}
+
+		let timeStr = chalk.yellow(time.toFixed(decimalPlaces).padStart(timePadding))
+		console.log(`| ${key.padEnd(namePadding)} | ${timeStr} ${unit} |`);
+	}
+	console.log(''.padStart(width, '-'))
+}
+
+async function buildWebpack () {
+	const start = now();
+
+	await run('webpack --config webpack.config.js >/dev/null');
+	if (!fs.existsSync('./webpack_out.js')) {
+		console.error(chalk.red`NO WEBPACK OUTPUT!`);
+		return;
+	}
+	MAIN = fs.readFileSync('./webpack_out.js');
+	fs.unlinkSync('./webpack_out.js');
+
+	timings['Build WebPack'] = now() - start;
 }
 
 async function main () {
 
-	const start = now();
-
-	await run ('cd ..');
-
-	if (process.argv.indexOf('--no-frontend') === -1) {
-		await run('webpack --config webpack.config.js');
-		if (!fs.existsSync('./webpack_out.js')) {
-			console.error('NO WEBPACK OUTPUT!');
+	if (!STAGING) {
+		const prompt = new Confirm(chalk.blue('Are you sure you want to deploy to production?'));
+		const res = await prompt.run();
+		if (!res) {
 			return;
 		}
-		MAIN = fs.readFileSync('./webpack_out.js');
-		fs.unlinkSync('./webpack_out.js');
+	}
+
+	const start = now();
+	const mainProgressBar = new cliProgress.SingleBar({
+		format: 'CLI Progress |' + chalk.cyan('{bar}') + '| {percentage}% || {value}/{total} Chunks || Speed: {speed}',
+		barCompleteChar: '\u2588',
+		barIncompleteChar: '\u2591',
+		hideCursor: true
+	});
+
+	mainProgressBar.start(100, 0, {
+		speed: 'N/A'
+	});
+
+	let interval = setInterval(() => mainProgressBar.increment(), 250);
+
+	if (process.argv.indexOf('--no-frontend') === -1) {
+		await buildWebpack();
+		mainProgressBar.update(25);
 
 		await buildHTML('');
-
-		console.log(`TS compilation took ${JSTime} ms`);
-		console.log(`LESS compilation took ${CSSTime} ms`);
+		mainProgressBar.update(70);
 	}
 
 	if (process.argv.indexOf('--no-backend') === -1) {
 		await cpServer();
+		mainProgressBar.update(75);
 	}
 
 	if (process.argv.indexOf('--no-upload') === -1) {
 		await upload();
+		mainProgressBar.update(99);
 	}
 
-	if (process.argv.indexOf('--no-backend') === -1) {
-		await restartServer();
-	}
+	clearInterval(interval);
+	mainProgressBar.update(100);
+	mainProgressBar.stop();
 
-	console.log(`\nBuilt project and uploaded in ${((now() - start)/ 1000).toFixed(2)} s`);
+	console.log(chalk.green`\nBuild Successful`);
+
+	timings['total'] = now() - start;
+
+	logTimings();
 }
 
-main();
+function handleError (e) {
+	console.log(e);
+	console.log(chalk.red('\n Build Failed'));
+}
+
+try {
+	main().catch(handleError);
+} catch (e) {
+	handleError(e)
+}

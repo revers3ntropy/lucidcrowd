@@ -17,11 +17,11 @@ def get_body(request, structure):
         Gets a nicely formatted dict from the body of the request
     :param request: flask.globals.Request
     :param structure: dict
-    :return: list[string]
+    :return: string
     """
     body = request.get_json(force=True)
 
-    for key in structure:
+    for key in structure.split(','):
         if key not in body:
             return f"'{key}' required property of request body"
 

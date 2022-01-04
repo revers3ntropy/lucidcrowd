@@ -15,14 +15,37 @@ def home():
 def all_users():
     cursor.execute("SELECT username, UNIX_TIMESTMP(created) FROM users")
 
-    res = u.res_as_dict(cursor, ['username', 'created'])
+    res = u.res_as_dict(cursor, 'username,created')
 
     return u.wrap_cors_header(res)
 
 
+@app.route("/open-session", methods=['POST'])
+def open_session():
+    body = u.get_body(request, 'username,password')
+
+    cursor.excecute(
+        "SELECT id FROM users WHERE username=(%s) AND password = SHA2(CONCAT((%s), ':SALT:', salt), 256)",
+        (body['username'], body['password'])
+    )
+
+    res = cursor.fetchall()
+
+    if not res:
+        return u.wrap_cors_header({
+            'valid': False,
+            'session-id': 0
+        })
+
+    return u.wrap_cors_header({
+        'valid': len(res) > 0 and res[0][0] > 0,
+        'remaining': res[0][0]
+    })
+
+
 @app.route("/valid-session", methods=['POST'])
 def valid_session():
-    body = u.get_body(request, ['session-id'])
+    body = u.get_body(request, 'session-id')
 
     cursor.execute(
         """
