@@ -1,4 +1,4 @@
-# gunicorn --keyfile ./privatekey.pem --certfile ./cert.pem -b 0.0.0.0:56786 app:app
+# gunicorn --reload --keyfile ./privatekey.pem --certfile ./cert.pem -b 0.0.0.0:56786 app:app
 from connectmysql import cursor
 from flask import Flask, request
 import utils as u
@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 @app.route("/", methods=['GET', 'POST'])
 def home():
-    return u.wrap_cors_header({'ok': True})
+    return u.wrap_cors_header({'ok': True, 'data': 'hi'})
 
 
 @app.route("/all-users", methods=['POST', 'GET'])

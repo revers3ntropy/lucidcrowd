@@ -13,6 +13,8 @@ let MAIN = '';
 let JSTime = 0;
 let CSSTime = 0;
 
+const STAGING = !process.argv.includes('--prod');
+
 /**
  * @param {string} cmd
  * @returns {Promise<void>}
@@ -37,7 +39,7 @@ async function buildHTML (dir) {
 
 	const paths = fs.readdirSync('./src/' + dir);
 
-	const distPath = p.join('./dist/public_html', dir);
+	const distPath = p.join('./dist/public_html' + (STAGING ? '/staging' : ''), dir);
 
 	let html = '';
 	let css = '';
@@ -46,10 +48,10 @@ async function buildHTML (dir) {
 	let subDirTime = 0;
 
 	for (const path of paths) {
-		const fullPath = './src/' + dir + "/" + path;
+		const fullPath = './src' + dir + "/" + path;
 
 		if (fs.statSync(fullPath).isDirectory()) {
-			subDirTime += await buildHTML(dir + "/" + path);
+			subDirTime += await buildHTML('/' + dir + "/" + path);
 			continue;
 		}
 
@@ -64,6 +66,10 @@ async function buildHTML (dir) {
 		else if (path === 'index.less') {
 			const start = now();
 			await run (`lessc ${fullPath} ${distPath}/index.css`);
+			if (!fs.existsSync(`${distPath}/index.css`)) {
+				console.log(`FILE '${distPath}/index.css' REQUIRED!`)
+				continue;
+			}
 			const fileContent = fs.readFileSync(`${distPath}/index.css`);
 			fs.unlinkSync(`${distPath}/index.css`);
 
@@ -75,6 +81,10 @@ async function buildHTML (dir) {
 			const start = now();
 
 			await run (`tsc --outDir ${distPath} ${fullPath}`);
+			if (!fs.existsSync(`${distPath}/index.js`)) {
+				console.log(`FILE '${distPath}/index.js' REQUIRED!`)
+				continue;
+			}
 			const fileContent = String(fs.readFileSync(`${distPath}/index.js`));
 			fs.unlinkSync(`${distPath}/index.js`);
 
@@ -82,7 +92,7 @@ async function buildHTML (dir) {
 
 			if (minified.error) {
 				console.error(`UglifyJS error: ${minified.error}`);
-				return;
+				return now() - start - subDirTime;
 			}
 			if (minified.warnings) {
 				console.log(minified.warnings);
@@ -123,10 +133,16 @@ async function buildHTML (dir) {
 async function cpServer () {
 	const start = now();
 
-	await run(`cp ./server/app.py ./dist/server/app.py`);
-	await run(`cp ./server/connectmysql.py ./dist/server/connectmysql.py`);
-	await run(`cp ./server/wsgi.py ./dist/server/wsgi.py`);
-	await run(`cp ./server/utils.py ./dist/server/utils.py`);
+	const paths = fs.readdirSync('./server/');
+
+	const distPath = `./dist/server${STAGING ? '-staging' : ''}/`;
+
+	for (const path of paths) {
+		if (fs.statSync('./server/' + path).isDirectory()) {
+			continue;
+		}
+		await run(`cp ./server/${path} ${distPath}`);
+	}
 
 	console.log(`Built Flask Server in ${now() - start} ms`);
 }
@@ -149,6 +165,10 @@ async function upload () {
 
 
 	console.log(`Upload took ${now() - start} ms`)
+}
+
+async function restartServer () {
+
 }
 
 async function main () {
@@ -178,6 +198,10 @@ async function main () {
 
 	if (process.argv.indexOf('--no-upload') === -1) {
 		await upload();
+	}
+
+	if (process.argv.indexOf('--no-backend') === -1) {
+		await restartServer();
 	}
 
 	console.log(`\nBuilt project and uploaded in ${((now() - start)/ 1000).toFixed(2)} s`);
