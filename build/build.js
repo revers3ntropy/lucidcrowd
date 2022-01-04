@@ -28,6 +28,10 @@ function run (cmd) {
 	});
 }
 
+/**
+ * @param {string} dir
+ * @returns {Promise<number>}
+ */
 async function buildHTML (dir) {
 	const start = now();
 
@@ -39,11 +43,13 @@ async function buildHTML (dir) {
 	let css = '';
 	let js = '';
 
+	let subDirTime = 0;
+
 	for (const path of paths) {
 		const fullPath = './src/' + dir + "/" + path;
 
 		if (fs.statSync(fullPath).isDirectory()) {
-			await buildHTML(dir + "/" + path);
+			subDirTime += await buildHTML(dir + "/" + path);
 			continue;
 		}
 
@@ -105,14 +111,24 @@ async function buildHTML (dir) {
 		collapseWhitespace: true
 	});
 
-	console.log(`Built '${distPath}' in ${now() - start} ms`);
-
 	fs.writeFileSync(distPath + '/index.html', final);
+
+	let time = now() - start - subDirTime;
+
+	console.log(`Built '${distPath}' in ${time} ms`);
+
+	return time;
 }
 
 async function cpServer () {
+	const start = now();
+
 	await run(`cp ./server/app.py ./dist/server/app.py`);
 	await run(`cp ./server/connectmysql.py ./dist/server/connectmysql.py`);
+	await run(`cp ./server/wsgi.py ./dist/server/wsgi.py`);
+	await run(`cp ./server/utils.py ./dist/server/utils.py`);
+
+	console.log(`Built Flask Server in ${now() - start} ms`);
 }
 
 async function upload () {
@@ -141,23 +157,30 @@ async function main () {
 
 	await run ('cd ..');
 
-	await run('webpack --config webpack.config.js');
-	if (!fs.existsSync('./webpack_out.js')) {
-		console.error('NO WEBPACK OUTPUT!');
-		return;
+	if (process.argv.indexOf('--no-frontend') === -1) {
+		await run('webpack --config webpack.config.js');
+		if (!fs.existsSync('./webpack_out.js')) {
+			console.error('NO WEBPACK OUTPUT!');
+			return;
+		}
+		MAIN = fs.readFileSync('./webpack_out.js');
+		fs.unlinkSync('./webpack_out.js');
+
+		await buildHTML('');
+
+		console.log(`TS compilation took ${JSTime} ms`);
+		console.log(`LESS compilation took ${CSSTime} ms`);
 	}
-	MAIN = fs.readFileSync('./webpack_out.js');
-	fs.unlinkSync('./webpack_out.js');
-	await buildHTML('');
 
-	console.log(`TS compilation took ${JSTime} ms`);
-	console.log(`LESS compilation took ${CSSTime} ms`);
+	if (process.argv.indexOf('--no-backend') === -1) {
+		await cpServer();
+	}
 
-	await cpServer();
+	if (process.argv.indexOf('--no-upload') === -1) {
+		await upload();
+	}
 
-	await upload();
-
-	console.log(`\nBuilt project and uploaded in ${now() - start} ms`);
+	console.log(`\nBuilt project and uploaded in ${((now() - start)/ 1000).toFixed(2)} s`);
 }
 
 main();

@@ -1,127 +1,56 @@
-# flask run __host=0.0.0.0
+# gunicorn --keyfile ./privatekey.pem --certfile ./cert.pem -b 0.0.0.0:56786 app:app
 from connectmysql import cursor
-
-from flask import Flask, request, jsonify
+from flask import Flask, request
+import utils as u
 
 app = Flask(__name__)
 
 
-@app.route("/login", methods=['POST'])
-def login():
-    body = request.get_json(force=True)
+@app.route("/", methods=['GET', 'POST'])
+def home():
+    return u.wrap_cors_header({'ok': True})
 
-    if not body['username']:
-        return jsonify({'error': 'No username specified'})
-    if not body['password']:
-        return jsonify({'error': 'No password specified'})
 
-    cursor.excecute(
-        "SELECT id FROM users WHERE username=(%s) AND password = SHA2(CONCAT((%s), ':SALT:', salt), 256)",
-        (body['username'], body['password'])
+@app.route("/all-users", methods=['POST', 'GET'])
+def all_users():
+    cursor.execute("SELECT username, UNIX_TIMESTMP(created) FROM users")
+
+    res = u.res_as_dict(cursor, ['username', 'created'])
+
+    return u.wrap_cors_header(res)
+
+
+@app.route("/valid-session", methods=['POST'])
+def valid_session():
+    body = u.get_body(request, ['session-id'])
+
+    cursor.execute(
+        """
+        SELECT ((UNIX_TIMESTAMP(created) + expires) - UNIX_TIMESTAMP(CURRENT_TIMESTAMP))
+        FROM sessions
+        WHERE id = (%s)
+        """,
+        (body['session-id'],)
     )
 
     res = cursor.fetchall()
 
-    if len(res) != 1:
-        return jsonify({'error': 'Account not found'})
+    if not res:
+        return u.wrap_cors_header({
+            'valid': False,
+            'remaining': 0
+        })
 
-    print(res)
-
-    return jsonify({
-        'error': None,
-        'id': res[0]['id']
+    return u.wrap_cors_header({
+        'valid': len(res) > 0 and res[0][0] > 0,
+        'remaining': res[0][0]
     })
 
 
-@app.route("/create_account", methods=['POST'])
-def create_account():
-    return f""
-
-
-@app.route("/delete_account", methods=['POST'])
-def delete_account():
-    return f""
-
-
-@app.route("/create_dataset", methods=['POST'])
-def create_dataset():
-    return f""
-
-
-@app.route("/delete_dataset", methods=['POST'])
-def delete_dataset():
-    return f""
-
-
-@app.route("/create_datapoint", methods=['POST'])
-def create_datapoint():
-    return f""
-
-
-@app.route("/delete_datapoint", methods=['POST'])
-def delete_datapoint():
-    return f""
-
-@app.route("/create_label", methods=['POST'])
-def create_label():
-    return f""
-
-
-@app.route("/delete_label", methods=['POST'])
-def delete_label():
-    return f""
-
-
-@app.route("/reputation_user", methods=['POST'])
-def reputation_user():
-    return f""
-
-
-@app.route("/reputation_dataset", methods=['POST'])
-def reputation_dataset():
-    return f""
-
-
-@app.route("/reputation_datapoint", methods=['POST'])
-def reputation_datapoint():
-    return f""
-
-
-@app.route("/public_info_user", methods=['POST'])
-def public_info_user():
-    return f""
-
-
-@app.route("/public_info_dataset", methods=['POST'])
-def public_info_dataset():
-    return f""
-
-
-@app.route("/public_info_datapoint", methods=['POST'])
-def public_info_datapoint():
-    return f""
-
-
-@app.route("/public_info_label", methods=['POST'])
-def public_info_label():
-    return f""
-
-
-@app.route("/download_labeled_data", methods=['POST'])
-def download_labeled_data():
-    return f""
-
-
-@app.route("/upload_data", methods=['POST'])
-def upload():
-    return f""
-
-
 if __name__ == '__main__':
-    context = ('local.crt', 'local.key')
     app.run(
         debug=False,
-        ssl_context=(),
-        host="77.72.5.9",
-        port=
+        ssl_context=('cert.pem', 'privatekey.pem'),
+        host="0.0.0.0",
+        port=56786
     )

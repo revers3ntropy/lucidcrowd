@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <title>LucidCrowd</title>
     <meta name="viewport" content="width=device-width">
+
+    <meta name="description" content="LucidCrowd - Your Global SuperVision">
+
 </head>
 <body x-data :class="$store.theme.value">
 <nav>
@@ -15,6 +18,13 @@
     </div>
 
     <div>
+        <a
+            :href="$store.general.WEB_ROOT + '/login'"
+            x-data
+            x-show="await window.isSignedIn()"
+            x-html="$store.icons.account"
+            class="icon"
+        ></a>
         <span
             x-data
             x-show="$store.theme.value === 'light'"

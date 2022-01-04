@@ -1,1 +1,1 @@
-document.title = 'Home';
+document.title = 'LucidCrowd Home';
