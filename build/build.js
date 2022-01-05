@@ -97,6 +97,11 @@ async function buildHTML (dir) {
 				console.log(chalk.red`FILE '${distPath}/index.js' REQUIRED!`)
 				continue;
 			}
+			if (STAGING) {
+				// replace the port of the server with the staging one
+				await run(`sed -i 's/56786/56787/g' ${distPath}/index.js`);
+			}
+
 			const fileContent = String(fs.readFileSync(`${distPath}/index.js`));
 			fs.unlinkSync(`${distPath}/index.js`);
 
@@ -165,7 +170,6 @@ async function cpServer () {
 
 async function upload () {
 	const start = now();
-
 
 	const paths = fs.readdirSync('./dist/');
 
@@ -253,8 +257,9 @@ async function main () {
 	}
 
 	const start = now();
+
 	const mainProgressBar = new cliProgress.SingleBar({
-		format: 'CLI Progress |' + chalk.cyan('{bar}') + '| {percentage}% || {value}/{total} Chunks || Speed: {speed}',
+		format: 'Progress ' + chalk.cyan('{bar}') + ' {percentage}%',
 		barCompleteChar: '\u2588',
 		barIncompleteChar: '\u2591',
 		hideCursor: true
@@ -290,7 +295,7 @@ async function main () {
 
 	console.log(chalk.green`\nBuild Successful`);
 
-	timings['total'] = now() - start;
+	timings['Total'] = now() - start;
 
 	logTimings();
 }

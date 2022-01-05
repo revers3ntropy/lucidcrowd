@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>LucidCrowd</title>
-    <meta name="viewport" content="width=device-width">
 
-    <meta name="description" content="LucidCrowd - Your Global SuperVision">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Your Global SuperVision - Get your data labeled through the power of crowd sourcing and gamification today">
+    <meta name="keywords" content="Data, Machine Learning, Labelling, Big Data">
 
 </head>
 <body x-data :class="$store.theme.value">
@@ -23,20 +24,23 @@
             x-data
             x-show="await window.isSignedIn()"
             x-html="$store.icons.account"
-            class="icon"
+        ></a>
+        <a
+            :href="$store.general.WEB_ROOT + '/@'"
+            x-data
+            x-show="!(await window.isSignedIn())"
+            x-html="$store.icons.account"
         ></a>
         <span
             x-data
             x-show="$store.theme.value === 'light'"
             x-html="$store.icons.lightTheme"
-            class="icon"
             @click="$store.theme.toggle()"
         ></span>
         <span
             x-data
             x-show="$store.theme.value === 'dark'"
             x-html="$store.icons.darkTheme"
-            class="icon"
             @click="$store.theme.toggle()"
         ></span>
     </div>

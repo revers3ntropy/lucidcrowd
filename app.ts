@@ -11,8 +11,10 @@ import './styles/animation.less';
 import Alpine from 'alpinejs';
 import 'alpinejs';
 
-const WEB_ROOT = 'https://lucidcrowd.uk';
-const API_PORT = 56786;
+const STAGING = !!window.location.href.match(/https:\/\/staging.lucidcrowd.uk(\/.*)*$/)
+
+const WEB_ROOT = `https://${STAGING ? 'staging.' : ''}lucidcrowd.uk`;
+const API_PORT = STAGING ? 56787 : 56786;
 
 const SESSION_ID = sessionStorage.getItem('session-id');
 
@@ -55,6 +57,7 @@ Alpine.store('icons', {
 });
 
 window.api = async (path, body) => {
+    console.log(API_PORT);
     try {
         const fetchRes = await fetch(`${WEB_ROOT}:${API_PORT}/${path}`, {
             method: 'POST',
