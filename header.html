@@ -12,7 +12,15 @@
 <body x-data :class="$store.theme.value">
 <nav>
     <div>
-
+        <a
+            x-data
+            :href="$store.general.WEB_ROOT"
+            style="
+                font-family: 'Source Code Pro', monospace;
+                font-weight: lighter;
+                font-size: 20px
+            "
+        >LucidCrowd</a>
     </div>
     <div>
 
@@ -20,14 +28,14 @@
 
     <div>
         <a
-            :href="$store.general.WEB_ROOT + '/login'"
             x-data
+            :href="$store.general.WEB_ROOT + '/login'"
             x-show="await window.isSignedIn()"
             x-html="$store.icons.account"
         ></a>
         <a
-            :href="$store.general.WEB_ROOT + '/@'"
             x-data
+            :href="$store.general.WEB_ROOT + '/@'"
             x-show="!(await window.isSignedIn())"
             x-html="$store.icons.account"
         ></a>

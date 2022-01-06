@@ -15,7 +15,6 @@ const cliProgress = require('cli-progress');
 const performanceNow = require("performance-now");
 const now = () => Math.round(performanceNow());
 
-
 const
 	HEAD = fs.readFileSync('./header.html'),
 	FOOT = fs.readFileSync('./footer.html'),
@@ -176,11 +175,11 @@ async function upload () {
 	for (const path of paths) {
 		if (fs.statSync('./dist/' + path).isDirectory()) {
 			await run(
-				`sshpass -f './build/sshPass.txt' scp -r /home/joseph/Projects/lucidcrowd/dist/${path} lucid@lucidcrowd.uk:~/`);
+				`sshpass -f './build/sshPass.txt' scp -r ./dist/${path} lucid@lucidcrowd.uk:~/`);
 			continue;
 		}
 		await run(
-			`sshpass -f './build/sshPass.txt' scp /home/joseph/Projects/lucidcrowd/dist/${path} lucid@lucidcrowd.uk:~/`);
+			`sshpass -f './build/sshPass.txt' scp ./dist/${path} lucid@lucidcrowd.uk:~/`);
 	}
 
 
@@ -259,7 +258,7 @@ async function main () {
 	const start = now();
 
 	const mainProgressBar = new cliProgress.SingleBar({
-		format: 'Progress ' + chalk.cyan('{bar}') + ' {percentage}%',
+		format: chalk.cyan('{bar}') + ' {percentage}%',
 		barCompleteChar: '\u2588',
 		barIncompleteChar: '\u2591',
 		hideCursor: true

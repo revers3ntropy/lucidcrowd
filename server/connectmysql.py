@@ -15,4 +15,4 @@ def get_cursor(host, username, password, db_name):
         database=db_name
     )
 
-    return mydb.cursor()
+    return mydb.cursor(), mydb

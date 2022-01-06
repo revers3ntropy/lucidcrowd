@@ -1,3 +1,5 @@
+import random
+
 from flask import jsonify, Response
 
 
@@ -23,9 +25,9 @@ def get_body(request, structure):
 
     for key in structure.split(','):
         if key not in body:
-            return f"'{key}' required property of request body"
+            return {'error': f"'{key}' required property of request body"}, False
 
-    return body
+    return body, True
 
 
 def wrap_cors_header(res):
@@ -37,3 +39,12 @@ def wrap_cors_header(res):
     resp = jsonify(res)
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
+
+
+def geb_salt(chars, length):
+    result = 'LCsalt-'
+
+    while len(result) < length:
+        result += random.choice(chars)
+
+    return result
