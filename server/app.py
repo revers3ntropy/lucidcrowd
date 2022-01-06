@@ -121,10 +121,36 @@ def open_session():
         VALUES (%s, %s)
     """, (user_id, sess_id))
 
+    db.commit();
+
     return u.wrap_cors_header({
         'valid': True,
         'session-id': sess_id
     })
+
+
+@app.route('/public-info', methods=['POST'])
+def method_name():
+    body, valid = u.get_body(request, 'username')
+    if not valid:
+        return u.wrap_cors_header(body)
+
+    cursor.execute("""
+        SELECT 
+            username, 
+            id
+            COUNT (
+                SELECT * 
+                FROM labels 
+                WHERE labels.userid = users.id
+            ) as labelcount
+        FROM 
+            users, labels
+        WHERE
+            users.username = %s
+    """, ( body['username'], ))
+
+    res = u.res_as_dict(cursor, 'username,id,labelcount')
 
 
 @app.route("/valid-session", methods=['POST'])

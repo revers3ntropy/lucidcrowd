@@ -15,6 +15,8 @@ const cliProgress = require('cli-progress');
 const performanceNow = require("performance-now");
 const now = () => Math.round(performanceNow());
 
+import {testAll, testRes} from './tests/main.js';
+
 const
 	HEAD = fs.readFileSync('./header.html'),
 	FOOT = fs.readFileSync('./footer.html'),
@@ -245,6 +247,15 @@ async function buildWebpack () {
 	timings['Build WebPack'] = now() - start;
 }
 
+async function git () {
+	await run(`git commit -m "${STAGING ? 'Deployed' : 'Shipped'} ${new Date().toLocaleString()}"`);
+	await run(`git push origin master`);
+}
+
+async function runTests () {
+
+}
+
 async function main () {
 
 	if (!STAGING) {
@@ -256,6 +267,8 @@ async function main () {
 	}
 
 	const start = now();
+
+	await git();
 
 	const mainProgressBar = new cliProgress.SingleBar({
 		format: chalk.cyan('{bar}') + ' {percentage}%',
