@@ -1,6 +1,6 @@
 import random
 
-from flask import jsonify, Response
+from flask import jsonify
 
 
 def res_as_dict(cursor, columns):

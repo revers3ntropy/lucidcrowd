@@ -1,6 +1,23 @@
-const { exec } = require("child_process");
+/**
+ * Builds and deploys the project to lucidcrowd.uk
+ * OPTIONS:
+ * --quiet       | limited console output
+ * --silent      | no console output
+ * --prod        | Deploy to production rather than staging.
+ * --no-tests    | Don't run tests. Cannot be combined with --prod
+ * --no-git      | Don't run git commit and git push
+ * --no-frontend | Don't rebuild the HTML, CSS and JS
+ * --no-backend  | Don't rebuild the python backend server
+ * --no-upload   | Don't upload anything
+ */
+
+// utils
+//const whyRunning = require('why-is-node-running');
 const fs = require('fs');
 const p = require('path');
+const {run} = require('./utils.js');
+const performanceNow = require("performance-now");
+const now = () => Math.round(performanceNow());
 
 // uglify
 const minifyHTML = require('html-minifier').minify;
@@ -9,45 +26,39 @@ const uglifyJS = require('uglify-js').minify;
 // beatify
 const chalk = require('chalk');
 const Confirm = require('prompt-confirm');
-const cliProgress = require('cli-progress');
+//const cliProgress = require('cli-progress');
 
-// timings
-const performanceNow = require("performance-now");
-const now = () => Math.round(performanceNow());
+const {testAll, testResStr} = require('./test.js');
+const {failed} = require("./test");
 
-import {testAll, testRes} from './tests/main.js';
+//setTimeout(whyRunning,5000);
 
 const
 	HEAD = fs.readFileSync('./header.html'),
 	FOOT = fs.readFileSync('./footer.html'),
+	GITHUB_TOK = fs.readFileSync('./build/github_token.txt'),
 	STAGING = !process.argv.includes('--prod'),
 	timings = {
 		'Compile TS': 0,
 		'Compile LESS': 0
+	},
+	QUIET = process.argv.indexOf('--quiet') !== -1;
+
+if (process.argv.indexOf('--silent') !== -1) {
+	console = {
+		log: () => {},
+		error: () => {},
 	};
+}
 
 let MAIN = '';
-
-/**
- * @param {string} cmd
- * @returns {Promise<void>}
- */
-function run (cmd) {
-	return new Promise((e) => {
-		exec(cmd, (error, stdout, stderr) => {
-			if (error) console.error(error);
-			if (stdout) console.error(stdout);
-			if (stderr) console.error(stderr);
-			e();
-		});
-	});
-}
 
 /**
  * @param {string} dir
  * @returns {Promise<number>}
  */
 async function buildHTML (dir) {
+	if (!QUIET) console.log(`Building HTML at '${dir}'`);
 	const start = now();
 
 	const paths = fs.readdirSync('./src/' + dir);
@@ -156,7 +167,10 @@ async function cpServer () {
 	const distPath = `./dist/server${STAGING ? '-staging' : ''}/`;
 
 	for (const path of paths) {
-		if (fs.statSync('./server/' + path).isDirectory()) {
+		if (
+			fs.statSync('./server/' + path).isDirectory() ||
+			path.split('.').pop() !== 'py'
+		) {
 			continue;
 		}
 		await run(`cp ./server/${path} ${distPath}`);
@@ -175,6 +189,7 @@ async function upload () {
 	const paths = fs.readdirSync('./dist/');
 
 	for (const path of paths) {
+		console.log('Uploading path ' + path);
 		if (fs.statSync('./dist/' + path).isDirectory()) {
 			await run(
 				`sshpass -f './build/sshPass.txt' scp -r ./dist/${path} lucid@lucidcrowd.uk:~/`);
@@ -183,6 +198,8 @@ async function upload () {
 		await run(
 			`sshpass -f './build/sshPass.txt' scp ./dist/${path} lucid@lucidcrowd.uk:~/`);
 	}
+
+	console.log(chalk.green('Finished Uploading'));
 
 
 	timings['Upload'] = now() - start;
@@ -249,16 +266,27 @@ async function buildWebpack () {
 
 async function git () {
 	await run(`git commit -m "${STAGING ? 'Deployed' : 'Shipped'} ${new Date().toLocaleString()}"`);
-	await run(`git push origin master`);
+	await run(`git push https://${GITHUB_TOK}@github.com/revers3ntropy/lucidcrowd.git`);
 }
 
+/**
+ * @returns {Promise<boolean>} Number of tests which failed
+ */
 async function runTests () {
+	await testAll();
+	if (!QUIET) console.log(testResStr());
 
+	return failed();
 }
 
 async function main () {
 
 	if (!STAGING) {
+		if (process.argv.indexOf('--no-tests') !== -1) {
+			console.log(chalk.red('MUST RUN TESTS WHEN DEPLOYING TO PRODUCTION'));
+			return;
+		}
+
 		const prompt = new Confirm(chalk.blue('Are you sure you want to deploy to production?'));
 		const res = await prompt.run();
 		if (!res) {
@@ -268,53 +296,64 @@ async function main () {
 
 	const start = now();
 
-	await git();
-
-	const mainProgressBar = new cliProgress.SingleBar({
-		format: chalk.cyan('{bar}') + ' {percentage}%',
-		barCompleteChar: '\u2588',
-		barIncompleteChar: '\u2591',
-		hideCursor: true
-	});
-
-	mainProgressBar.start(100, 0, {
-		speed: 'N/A'
-	});
-
-	let interval = setInterval(() => mainProgressBar.increment(), 250);
+	if (process.argv.indexOf('--no-git') === -1) {
+		if (!QUIET) console.log(chalk.yellow('Committing and pushing...'));
+		await git().catch(handleError);
+	}
 
 	if (process.argv.indexOf('--no-frontend') === -1) {
-		await buildWebpack();
-		mainProgressBar.update(25);
+		if (!QUIET) console.log('Building WebPack...');
+		await buildWebpack().catch(handleError);
+		//mainProgressBar.update(25);
 
-		await buildHTML('');
-		mainProgressBar.update(70);
+		if (!QUIET) console.log('Building HTML...');
+		await buildHTML('').catch(handleError);
 	}
 
 	if (process.argv.indexOf('--no-backend') === -1) {
-		await cpServer();
-		mainProgressBar.update(75);
+		if (!QUIET) console.log('Building Python Server...');
+		await cpServer().catch(handleError);
+	}
+
+	let failingTests = false;
+
+	if (process.argv.indexOf('--no-tests') === -1) {
+		failingTests = !(await runTests());
+	}
+
+	if (failingTests) {
+		if (QUIET) {
+			console.log('Remove "--quiet" to see failing tests');
+		}
+		if (STAGING) {
+			const prompt = new Confirm(chalk.blue('Are you sure you want to continue with failing tests?'));
+			const res = await prompt.run();
+			if (!res) {
+				console.log('quitting');
+				return;
+			}
+		} else {
+			console.log('Please fix tests to continue');
+			return;
+		}
 	}
 
 	if (process.argv.indexOf('--no-upload') === -1) {
-		await upload();
-		mainProgressBar.update(99);
+		if (!QUIET) console.log('Uploading...');
+		await upload().catch(handleError);
 	}
-
-	clearInterval(interval);
-	mainProgressBar.update(100);
-	mainProgressBar.stop();
 
 	console.log(chalk.green`\nBuild Successful`);
 
 	timings['Total'] = now() - start;
 
-	logTimings();
+	if (!QUIET) logTimings();
 }
 
 function handleError (e) {
 	console.log(e);
 	console.log(chalk.red('\n Build Failed'));
+	throw '';
 }
 
 try {

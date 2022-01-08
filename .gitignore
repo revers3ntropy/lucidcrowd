@@ -6,3 +6,6 @@
 /server/.idea/
 /build/sshPass.txt
 /server/.env
+/server/venv/
+/build/github_token.txt
+/server/log.txt

@@ -1,8 +1,9 @@
+const { exec } = require("child_process");
 /**
  * @param {string} cmd
  * @returns {Promise<void>}
  */
-function run (cmd) {
+exports.run = async (cmd) => {
 	return new Promise((e) => {
 		exec(cmd, (error, stdout, stderr) => {
 			if (error) console.error(error);

@@ -4,6 +4,8 @@ import os
 from connectmysql import get_cursor
 from flask import Flask, request
 import utils as u
+from dotenv import load_dotenv
+from pathlib import Path
 
 # CONSTANTS
 # this value gets replaced when built
@@ -11,6 +13,8 @@ PORT = 56786
 STAGING = str(PORT)[-1] == '7'
 
 USERNAME_CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_ '
+
+load_dotenv(dotenv_path=Path('./.env'))
 
 DB_USER = os.getenv('DB_USER')
 DB_HOST = os.getenv('DB_HOST')
@@ -23,6 +27,8 @@ SALT_CHARS = os.getenv('SEC_SALTCHARS')
 cursor, db = get_cursor(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME)
 
 app = Flask(__name__)
+
+app.config['DEBUG'] = STAGING
 
 # ROUTES
 
