@@ -140,17 +140,19 @@ function test (cb) {
 exports.expect = (val1) => {
     return {
         toBe: test((val2) =>
-            val1 === val2 || `${stringify(val1)} was expected to equal ${stringify(val2)}`),
+            val1 === val2 || `'${stringify(val1)}' was expected to be '${stringify(val2)}'`),
         toNotBe: test((val2) =>
-            val1 !== val2 || `${stringify(val1)} was expected to not equal ${stringify(val2)}`),
+            val1 !== val2 || `'${stringify(val1)}' was expected to not be '${stringify(val2)}'`),
         toEq: test((val2) =>
-            deepCompare(val1,  val2) || `${stringify(val1)} was expected to equal ${stringify(val2)}`),
+            deepCompare(val1,  val2) || `'${stringify(val1)}' was expected to equal '${stringify(val2)}'`),
         toNotEq: test((val2) =>
-            !deepCompare(val1, val2) || `${stringify(val1)} was expected to not equal ${stringify(val2)}`),
+            !deepCompare(val1, val2) || `'${stringify(val1)}' was expected to not equal '${stringify(val2)}'`),
         toBeGT: test((val2) =>
-            val1 > val2 || `${stringify(val1)} was expected to be greater than ${stringify(val2)}`),
+            val1 > val2 || `'${stringify(val1)}' was expected to be greater than '${stringify(val2)}'`),
         toBeLT: test((val2) =>
-            val1 < val2 || `${stringify(val1)} was expected to not equal ${stringify(val2)}`),
+            val1 < val2 || `'${stringify(val1)}' was expected to not equal '${stringify(val2)}'`),
+        toHaveType: test((type) =>
+            (typeof val1 === type) || `'${stringify(val1)}' was expected to be of type '${stringify(type)}'`),
 
     };
 };
@@ -181,7 +183,7 @@ exports.testResStr = () => {
         return chalk.green`     All tests Passed (${passes})`;
     }
     let out = `
-         ${chalk.red(fails.length)}/${passes + fails.length} Tests Failed
+         ${chalk.red(fails.length)} Tests Failed (/${passes + fails.length})
          `;
     for (let fail of fails) {
         out += '\n' + fail + '\n';

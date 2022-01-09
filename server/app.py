@@ -1,11 +1,9 @@
 # gunicorn --reload --keyfile ./privatekey.pem --certfile ./cert.pem -b 0.0.0.0:56786 app:app
 import os
 
-from connectmysql import get_cursor
+from connectmysql import cursor, mydb as db
 from flask import Flask, request
 import utils as u
-from dotenv import load_dotenv
-from pathlib import Path
 
 # CONSTANTS
 # this value gets replaced when built
@@ -14,21 +12,12 @@ STAGING = str(PORT)[-1] == '7'
 
 USERNAME_CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_ '
 
-load_dotenv(dotenv_path=Path('./.env'))
-
-DB_USER = os.getenv('DB_USER')
-DB_HOST = os.getenv('DB_HOST')
-DB_NAME = os.getenv('DB_DATABASE')
-DB_PASSWORD = os.getenv('DB_PASSWORD')
-ID_MAX = os.getenv('SEC_IDMAX')
-SALT_LENGTH = os.getenv('SEC_SALTLENGTH')
-SALT_CHARS = os.getenv('SEC_SALTCHARS')
-
-cursor, db = get_cursor(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME)
-
 app = Flask(__name__)
 
 app.config['DEBUG'] = STAGING
+
+SALT_LENGTH = int(os.getenv('SEC_SALTLENGTH'))
+SALT_CHARS = os.getenv('SEC_SALTCHARS')
 
 # ROUTES
 
@@ -42,7 +31,7 @@ def home():
 def all_users():
     cursor.execute("SELECT username, UNIX_TIMESTMP(created) FROM users")
 
-    res = u.res_as_dict(cursor, 'username,created')
+    res = u.res_as_dict('username,created')
 
     return u.wrap_cors_header(res)
 
@@ -60,16 +49,25 @@ def create_account():
         if char not in USERNAME_CHARS:
             username = username.replace(char, '')
 
-    cursor.execute("SELECT UUID_SORT(), UUID_SHORT()")
-    uuid, sess_id = cursor.fetchone()
+    cursor.execute("""
+        SELECT username FROM users WHERE username = %s
+    """, (username,))
+
+    if len(cursor.fetchall()):
+        return u.wrap_cors_header({
+            'error': 'Username already exists'
+        })
+
+    cursor.execute("SELECT UUID_SHORT(), UUID_SHORT()")
+    uuid, sess_id = cursor.fetchall()[0]
 
     cursor.execute("""
         INSERT INTO sessions
         (id, userid)
         VALUES (%s, %s)
-    """, (uuid, sess_id))
+    """, (sess_id, uuid))
 
-    salt = u.geb_salt(SALT_CHARS, SALT_LENGTH)
+    salt = u.gen_salt(SALT_CHARS, SALT_LENGTH)
 
     cursor.execute("""
         INSERT INTO users
@@ -80,8 +78,7 @@ def create_account():
     db.commit()
 
     return u.wrap_cors_header({
-        'session-id': sess_id,
-        'username': username
+        'session-id': sess_id
     })
 
 
@@ -96,7 +93,7 @@ def open_session():
         FROM users 
         WHERE 
         username=(%s) 
-            AND password = SHA2(CONCAT(salt, %s)), 256 
+            AND password = SHA2(CONCAT(salt, %s), 256)
         """, (body['username'], body['password'])
     )
 
@@ -127,7 +124,7 @@ def open_session():
         VALUES (%s, %s)
     """, (user_id, sess_id))
 
-    db.commit();
+    db.commit()
 
     return u.wrap_cors_header({
         'valid': True,
@@ -154,9 +151,9 @@ def method_name():
             users, labels
         WHERE
             users.username = %s
-    """, ( body['username'], ))
+    """, (body['username'], ))
 
-    res = u.res_as_dict(cursor, 'username,id,labelcount')
+    res = u.res_as_dict('username,id,labelcount')
 
 
 @app.route("/valid-session", methods=['POST'])
@@ -165,26 +162,45 @@ def valid_session():
     if not valid:
         return u.wrap_cors_header(body)
 
-    cursor.execute(
-        """
-            SELECT ((UNIX_TIMESTAMP(created) + expires) - UNIX_TIMESTAMP(CURRENT_TIMESTAMP))
-            FROM sessions
-            WHERE id = (%s)
-        """,
-        (body['session-id'],)
-    )
-
-    res = cursor.fetchall()
-
-    if not res:
-        return u.wrap_cors_header({
-            'valid': False,
-            'remaining': 0
-        })
+    valid, _, remaining = u.valid_session(body['session-id'])
 
     return u.wrap_cors_header({
-        'valid': len(res) > 0 and res[0][0] > 0,
-        'remaining': res[0][0]
+        'valid': valid,
+        'remaining': remaining
+    })
+
+
+@app.route('/delete-account', methods=['POST'])
+def delete_account():
+    body, valid = u.get_body(request, 'session-id,username,password')
+    if not valid:
+        return u.wrap_cors_header(body)
+    
+    valid_sess, userid, _ = u.valid_session(body['session-id'])
+
+    if not valid_sess:
+        return u.wrap_cors_header({
+            'completed': False,
+            'error': 'invalid session'
+        })
+
+    cursor.execute(
+        """
+            DELETE FROM 
+                users, sessions 
+            WHERE 
+                users.id = sessions.userid 
+                AND sessions.id = (%s)
+                AND users.username=(%s)
+                AND users.password = SHA2(CONCAT(users.salt, %s), 256)
+        """,
+        (body['session-id'], body['username'], body['password'])
+    )
+
+    db.commit()
+
+    return u.wrap_cors_header({
+        'completed': True
     })
 
 

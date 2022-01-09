@@ -1,13 +1,14 @@
 import random
 
+from connectmysql import cursor, mydb as db
+
 from flask import jsonify
 
 
-def res_as_dict(cursor, columns):
+def res_as_dict(columns):
     """
         Gets the current set of rows as a list of dicts,
         rather than a list of lists which is the default
-    :param cursor: mysql.connector.connection_cext.CMySQLConnection
     :param columns: list[string]
     :return: list[dict]
     """
@@ -41,10 +42,39 @@ def wrap_cors_header(res):
     return resp
 
 
-def geb_salt(chars, length):
+def gen_salt(chars, length):
     result = 'LCsalt-'
 
     while len(result) < length:
         result += random.choice(chars)
 
     return result
+
+
+def valid_session(session):
+    """
+    :param session:
+    :return: (valid: bool, userid: int, session_time_remaining: int)
+    """
+    cursor.execute(
+        """
+            SELECT 
+                (
+                    (UNIX_TIMESTAMP(sessions.created) + sessions.expires) - 
+                    UNIX_TIMESTAMP(CURRENT_TIMESTAMP)
+                ),
+                users.id
+            FROM sessions, users
+            WHERE 
+                sessions.id = (%s) AND
+                users.id = sessions.userid
+        """,
+        (session,)
+    )
+
+    res = cursor.fetchall()
+
+    if not res or not (len(res) > 0 and res[0][0] > 0):
+        return False, 0, 0
+
+    return True, res[0][1], res[0][0]
