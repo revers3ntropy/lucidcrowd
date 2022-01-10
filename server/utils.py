@@ -1,8 +1,17 @@
 import random
+import logging
 
 from connectmysql import cursor, mydb as db
 
 from flask import jsonify
+
+logger = logging.getLogger()
+handler = logging.FileHandler('log.txt')
+logger.addHandler(handler)
+
+
+def log(msg, lvl=1):
+    logger.log(lvl, msg)
 
 
 def res_as_dict(columns):

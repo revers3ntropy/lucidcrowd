@@ -29,13 +29,13 @@
     <div>
         <a
             x-data
-            :href="$store.general.WEB_ROOT + '/login'"
+            :href="$store.general.WEB_ROOT + '/@'"
             x-show="await window.isSignedIn()"
             x-html="$store.icons.account"
         ></a>
         <a
             x-data
-            :href="$store.general.WEB_ROOT + '/@'"
+            :href="$store.general.WEB_ROOT + '/login'"
             x-show="!(await window.isSignedIn())"
             x-html="$store.icons.account"
         ></a>

@@ -15,6 +15,7 @@ const STAGING = !!window.location.href.match(/https:\/\/staging.lucidcrowd.uk(\/
 
 const WEB_ROOT = `https://${STAGING ? 'staging.' : ''}lucidcrowd.uk`;
 const API_PORT = STAGING ? 56787 : 56786;
+const SERVER_URL = `https://lucidcrowd.uk:${API_PORT}`;
 
 const SESSION_ID = sessionStorage.getItem('session-id') || '0';
 
@@ -22,6 +23,7 @@ window.STAGING = STAGING;
 window.WEB_ROOT = WEB_ROOT;
 window.API_PORT = API_PORT;
 window.SESSION_ID = SESSION_ID;
+window.SERVER_URL = SERVER_URL;
 
 Alpine.store('theme', {
     init () {
@@ -62,9 +64,8 @@ Alpine.store('icons', {
 });
 
 window.api = async (path, body) => {
-    console.log(API_PORT);
     try {
-        const fetchRes = await fetch(`${WEB_ROOT}:${API_PORT}/${path}`, {
+        const fetchRes = await fetch(`${SERVER_URL}/${path}`, {
             method: 'POST',
             body: JSON.stringify(body)
         });
@@ -96,6 +97,14 @@ window.isSignedIn = async () => {
 
     return res.res['valid'];
 }
+
+window.requireAuth = async () => {
+    if (await window.isSignedIn()) {
+        return;
+    }
+
+    window.location.assign(`${WEB_ROOT}/login?cb=${encodeURI(window.location.href)}`);
+};
 
 
 Alpine.start();

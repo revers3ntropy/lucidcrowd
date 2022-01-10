@@ -2,6 +2,7 @@ const {run} = require('../utils.js');
 const {test, expect} = require('../test.js');
 
 const fetch = require('axios');
+const fs = require("fs");
 
 const api = async (path='', body={}) => {
     try {
@@ -44,10 +45,11 @@ async function generateUsers (n) {
             username: 'user' + i,
             password: 'password' + i
         });
-        const session = res['session-id'];
-        expect(session).toBeGT(0);
 
-        console.log(i, ': ', session, res);
+        const session = res['session-id'];
+
+        expect(!!session).toBe(true);
+
         sessions.push(session);
     }
 
@@ -60,8 +62,6 @@ async function validateSessions (sessions) {
         const res = await api('valid-session', {
             'session-id': session
         });
-
-        console.log(i, ': ', session, res);
 
         expect(res['valid']).toBe(true);
         i++;
@@ -77,14 +77,19 @@ async function cleanUp (sessions) {
             password: 'password' + i
         });
 
-        console.log(res);
-
         expect(res['completed']).toBe(true);
         i++;
     }
 }
 
+function clearLog () {
+    fs.truncateSync('server/log.txt', 0, );
+}
+
 test(async () => {
+
+    clearLog();
+
     await startBackend();
 
     expect ((await api())['ok']).toBe(true);

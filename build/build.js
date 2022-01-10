@@ -26,12 +26,9 @@ const uglifyJS = require('uglify-js').minify;
 // beatify
 const chalk = require('chalk');
 const Confirm = require('prompt-confirm');
-//const cliProgress = require('cli-progress');
 
 const {testAll, testResStr} = require('./test.js');
 const {failed} = require("./test");
-
-//setTimeout(whyRunning,5000);
 
 const
 	HEAD = fs.readFileSync('./header.html'),
@@ -163,7 +160,6 @@ async function cpServer () {
 	const start = now();
 
 	const paths = fs.readdirSync('./server/');
-
 	const distPath = `./dist/server${STAGING ? '-staging' : ''}/`;
 
 	for (const path of paths) {
@@ -233,6 +229,7 @@ function logTimings () {
 
 	const sortedTimings = sortObjectEntries(timings);
 
+	let highlight = false;
 	for (let key in sortedTimings) {
 		let time = sortedTimings[key];
 		let unit = 'ms';
@@ -245,7 +242,12 @@ function logTimings () {
 		}
 
 		let timeStr = chalk.yellow(time.toFixed(decimalPlaces).padStart(timePadding))
-		console.log(`| ${key.padEnd(namePadding)} | ${timeStr} ${unit} |`);
+		if (highlight) {
+			console.log('|' + chalk.bgBlack` ${key.padEnd(namePadding)} | ${timeStr} ${unit} ` + '|');
+		} else {
+			console.log(`| ${key.padEnd(namePadding)} | ${timeStr} ${unit} |`);
+		}
+		highlight = !highlight;
 	}
 	console.log(''.padStart(width, '-'))
 }
@@ -262,11 +264,6 @@ async function buildWebpack () {
 	fs.unlinkSync('./webpack_out.js');
 
 	timings['Build WebPack'] = now() - start;
-}
-
-async function git () {
-	await run(`git commit -m "${STAGING ? 'Deployed' : 'Shipped'} ${new Date().toLocaleString()}"`);
-	await run(`git push https://${GITHUB_TOK}@github.com/revers3ntropy/lucidcrowd.git`);
 }
 
 /**
@@ -296,17 +293,10 @@ async function main () {
 
 	const start = now();
 
-	if (process.argv.indexOf('--no-git') === -1) {
-		if (!QUIET) console.log(chalk.yellow('Committing and pushing...'));
-		await git().catch(handleError);
-	}
-
 	if (process.argv.indexOf('--no-frontend') === -1) {
 		if (!QUIET) console.log('Building WebPack...');
 		await buildWebpack().catch(handleError);
-		//mainProgressBar.update(25);
 
-		if (!QUIET) console.log('Building HTML...');
 		await buildHTML('').catch(handleError);
 	}
 
@@ -318,7 +308,9 @@ async function main () {
 	let failingTests = false;
 
 	if (process.argv.indexOf('--no-tests') === -1) {
+		const testStart = now();
 		failingTests = !(await runTests());
+		timings['Tests'] = now() - testStart;
 	}
 
 	if (failingTests) {

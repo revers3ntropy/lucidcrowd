@@ -6,7 +6,7 @@ const { exec } = require("child_process");
 exports.run = async (cmd) => {
 	return new Promise((e) => {
 		exec(cmd, (error, stdout, stderr) => {
-			if (error) console.error(error);
+			if (error) throw error;
 			if (stdout) console.error(stdout);
 			if (stderr) console.error(stderr);
 			e();

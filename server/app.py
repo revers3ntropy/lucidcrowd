@@ -19,6 +19,7 @@ app.config['DEBUG'] = STAGING
 SALT_LENGTH = int(os.getenv('SEC_SALTLENGTH'))
 SALT_CHARS = os.getenv('SEC_SALTCHARS')
 
+
 # ROUTES
 
 
@@ -58,7 +59,7 @@ def create_account():
             'error': 'Username already exists'
         })
 
-    cursor.execute("SELECT UUID_SHORT(), UUID_SHORT()")
+    cursor.execute("SELECT UUID(), UUID()")
     uuid, sess_id = cursor.fetchall()[0]
 
     cursor.execute("""
@@ -92,10 +93,10 @@ def open_session():
         SELECT id 
         FROM users 
         WHERE 
-        username=(%s) 
+            username=(%s) 
             AND password = SHA2(CONCAT(salt, %s), 256)
         """, (body['username'], body['password'])
-    )
+                    )
 
     user_id = cursor.fetchone()[0]
 
@@ -106,7 +107,7 @@ def open_session():
             'error': 'Invalid Login'
         })
 
-    cursor.execute("SELECT UUID_SHORT()")
+    cursor.execute("SELECT UUID()")
 
     sess_id = cursor.fetchone()[0]
 
@@ -133,7 +134,7 @@ def open_session():
 
 
 @app.route('/public-info', methods=['POST'])
-def method_name():
+def public_info():
     body, valid = u.get_body(request, 'username')
     if not valid:
         return u.wrap_cors_header(body)
@@ -151,9 +152,43 @@ def method_name():
             users, labels
         WHERE
             users.username = %s
-    """, (body['username'], ))
+    """, (body['username'],))
 
     res = u.res_as_dict('username,id,labelcount')
+
+    return u.wrap_cors_header({
+        'username': res['username'],
+        'label-count': res['labelcount']
+    })
+
+
+@app.route('/private-info', methods=['POST'])
+def private_info():
+    body, valid = u.get_body(request, 'session-id')
+    if not valid:
+        return u.wrap_cors_header(body)
+
+    cursor.execute("""
+        SELECT 
+            username,
+            id
+            COUNT (
+                SELECT * 
+                FROM labels 
+                WHERE labels.userid = users.id
+            ) as labelcount
+        FROM 
+            users, labels
+        WHERE
+            users.username = %s
+    """, (body['username'],))
+
+    res = u.res_as_dict('username,id,labelcount')
+
+    return u.wrap_cors_header({
+        'username': res['username'],
+        'label-count': res['labelcount']
+    })
 
 
 @app.route("/valid-session", methods=['POST'])
@@ -172,10 +207,10 @@ def valid_session():
 
 @app.route('/delete-account', methods=['POST'])
 def delete_account():
-    body, valid = u.get_body(request, 'session-id,username,password')
+    body, valid = u.get_body(request, 'session-id')
     if not valid:
         return u.wrap_cors_header(body)
-    
+
     valid_sess, userid, _ = u.valid_session(body['session-id'])
 
     if not valid_sess:
@@ -184,18 +219,12 @@ def delete_account():
             'error': 'invalid session'
         })
 
-    cursor.execute(
-        """
-            DELETE FROM 
-                users, sessions 
-            WHERE 
-                users.id = sessions.userid 
-                AND sessions.id = (%s)
-                AND users.username=(%s)
-                AND users.password = SHA2(CONCAT(users.salt, %s), 256)
-        """,
-        (body['session-id'], body['username'], body['password'])
-    )
+    cursor.execute('SELECT userid FROM sessions WHERE id = %s ', (body['session-id'],))
+
+    userid, = cursor.fetchone()
+
+    cursor.execute("DELETE FROM users WHERE id = %s", (userid,))
+    cursor.execute("DELETE FROM sessions WHERE userid = %s", (userid,))
 
     db.commit()
 
