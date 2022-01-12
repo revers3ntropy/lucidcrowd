@@ -57,14 +57,32 @@ async function generateUsers (n) {
 }
 
 async function validateSessions (sessions) {
-    let i = 0;
     for (const session of sessions) {
         const res = await api('valid-session', {
             'session-id': session
         });
 
         expect(res['valid']).toBe(true);
-        i++;
+    }
+}
+
+async function inValidateSessions (sessions) {
+    for (const session of sessions) {
+        const res = await api('invalidate-session', {
+            'session-id': session
+        });
+
+        expect(res['completed']).toBe(true);
+    }
+}
+
+async function validateInvalidSessions (sessions) {
+    for (const session of sessions) {
+        const res = await api('valid-session', {
+            'session-id': session
+        });
+
+        expect(res['valid']).toBe(false);
     }
 }
 
@@ -80,33 +98,42 @@ async function cleanUp (sessions) {
         expect(res['completed']).toBe(true);
         i++;
     }
+    // kill server
+    await run('sudo pkill gunicorn');
 }
 
-function clearLog () {
-    fs.truncateSync('server/log.txt', 0, );
-}
 
-test(async () => {
-
-    clearLog();
-
-    await startBackend();
-
-    expect ((await api())['ok']).toBe(true);
-
-    const sessions = await generateUsers(5);
-    await validateSessions(sessions);
-
+async function invalidUser () {
     const badUsernameRes = await api('create-account', {
         username: 'user0',
         password: 'password'
     });
     expect(badUsernameRes['session-id']).toBe(undefined);
     expect(badUsernameRes['error']).toHaveType('string');
+}
+
+function clearLog () {
+    fs.truncateSync('server/log.txt', 0);
+    expect(fs.readFileSync('server/log.txt')).toEq('');
+}
+
+function serverRunning () {
+    expect( (await api())['ok'] )
+        .toBe(true);
+}
+
+test(async () => {
+    clearLog();
+
+    await startBackend();
+    await serverRunning();
+
+    const sessions = await generateUsers(5);
+
+    await validateSessions(sessions);
+    await inValidateSessions(sessions);
+    await validateInvalidSessions(sessions);
 
     await cleanUp(sessions);
-
-    await run('sudo pkill gunicorn');
-
     return true;
 });

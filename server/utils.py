@@ -87,3 +87,19 @@ def valid_session(session):
         return False, 0, 0
 
     return True, res[0][1], res[0][0]
+
+
+def reputation_user():
+    return 0
+
+
+def reputation_label():
+    return 0
+
+
+def reputation_dataset():
+    return 0
+
+
+def reputation_datapoint():
+    return 0

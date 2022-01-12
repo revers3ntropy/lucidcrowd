@@ -8,7 +8,7 @@ import './styles/animation.less';
 
 // ALPINE
 // alpine types. Alpine object is already a property of window
-import Alpine from 'alpinejs';
+import type Alpine from 'alpinejs';
 import 'alpinejs';
 
 const STAGING = !!window.location.href.match(/https:\/\/staging.lucidcrowd.uk(\/.*)*$/)
@@ -105,6 +105,3 @@ window.requireAuth = async () => {
 
     window.location.assign(`${WEB_ROOT}/login?cb=${encodeURI(window.location.href)}`);
 };
-
-
-Alpine.start();

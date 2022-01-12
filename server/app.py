@@ -191,6 +191,34 @@ def private_info():
     })
 
 
+@app.route('/leaderboard', methods=['POST'])
+def leaderboard():
+    body, valid = u.get_body(request, 'options,session')
+    if not valid:
+        return u.wrap_cors_header(body)
+
+    cursor.execute("""
+        SELECT 
+            username,
+            COUNT (
+                SELECT * 
+                FROM labels 
+                WHERE labels.userid = users.id
+            ) as labelcount
+        FROM 
+            users, labels
+        WHERE
+            users.username = %s
+    """, (body['username'],))
+
+    res = u.res_as_dict('username,id,labelcount')
+
+    return u.wrap_cors_header({
+        'username': res['username'],
+        'label-count': res['labelcount']
+    })
+
+
 @app.route("/valid-session", methods=['POST'])
 def valid_session():
     body, valid = u.get_body(request, 'session-id')
@@ -202,6 +230,29 @@ def valid_session():
     return u.wrap_cors_header({
         'valid': valid,
         'remaining': remaining
+    })
+
+@app.route("/invalidate-session", methods=['POST'])
+def invalidate_session():
+    body, valid = u.get_body(request, 'session-id')
+    if not valid:
+        return u.wrap_cors_header(body)
+
+    valid, _, remaining = u.valid_session(body['session-id'])
+
+    if not valid:
+        return u.wrap_cors_header({
+            'completed': False
+        })
+
+    cursor.excecute("""
+        UPDATE sessions WHERE id=%s SET timeoutthing = 0
+    """)
+
+    db.commit();
+
+    return u.wrap_cors_header({
+        'completed': True
     })
 
 
