@@ -9,3 +9,4 @@
 /server/venv/
 /build/github_token.txt
 /server/log.txt
+/webpack_log.txt

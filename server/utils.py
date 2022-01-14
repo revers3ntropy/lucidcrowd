@@ -1,17 +1,21 @@
 import random
 import logging
+from os.path import exists
 
-from connectmysql import cursor, mydb as db
+from connectmysql import cursor
 
 from flask import jsonify
 
-logger = logging.getLogger()
-handler = logging.FileHandler('log.txt')
-logger.addHandler(handler)
+if exists('log.txt'):
+    logger = logging.getLogger()
+    handler = logging.FileHandler('log.txt')
+    logger.addHandler(handler)
 
+    def log(msg, lvl=1):
+        logger.log(lvl, msg)
 
-def log(msg, lvl=1):
-    logger.log(lvl, msg)
+else:
+    log = print
 
 
 def res_as_dict(columns):
@@ -86,7 +90,7 @@ def valid_session(session):
     if not res or not (len(res) > 0 and res[0][0] > 0):
         return False, 0, 0
 
-    return True, res[0][1], res[0][0]
+    return True, int(res[0][1]), int(res[0][0])
 
 
 def reputation_user():

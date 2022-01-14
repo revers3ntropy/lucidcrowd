@@ -72,7 +72,7 @@ async function buildHTML (dir) {
 		const fullPath = './src' + dir + "/" + path;
 
 		if (fs.statSync(fullPath).isDirectory()) {
-			subDirTime += await buildHTML('/' + dir + "/" + path);
+			subDirTime += await buildHTML(dir + "/" + path);
 			continue;
 		}
 
@@ -86,7 +86,7 @@ async function buildHTML (dir) {
 
 		else if (path === 'index.less') {
 			const start = now();
-			await run (`lessc ${fullPath} ${distPath}/index.css`);
+			await run (`lessc ${fullPath} ${distPath}/index.css > ts_less_log.txt`);
 			if (!fs.existsSync(`${distPath}/index.css`)) {
 				console.log(chalk.red`FILE '${distPath}/index.css' REQUIRED!`)
 				continue;
@@ -101,9 +101,9 @@ async function buildHTML (dir) {
 		else if (path === 'index.ts') {
 			const start = now();
 
-			await run (`tsc --outDir ${distPath} ${fullPath}`);
+			await run (`tsc --outDir ${distPath} --esModuleInterop --typeRoots "./types" --lib "ES2018,DOM" ${fullPath} > ts_less_log.txt`);
 			if (!fs.existsSync(`${distPath}/index.js`)) {
-				console.log(chalk.red`FILE '${distPath}/index.js' REQUIRED!`)
+				console.log(chalk.red`FILE '${distPath}/index.js' REQUIRED!`);
 				continue;
 			}
 			if (STAGING) {
@@ -255,7 +255,7 @@ function logTimings () {
 async function buildWebpack () {
 	const start = now();
 
-	await run('webpack --config webpack.config.js >/dev/null');
+	await run('webpack --config webpack.config.js > webpack_log.txt');
 	if (!fs.existsSync('./webpack_out.js')) {
 		console.error(chalk.red`NO WEBPACK OUTPUT!`);
 		return;
@@ -321,7 +321,6 @@ async function main () {
 			const prompt = new Confirm(chalk.blue('Are you sure you want to continue with failing tests?'));
 			const res = await prompt.run();
 			if (!res) {
-				console.log('quitting');
 				return;
 			}
 		} else {

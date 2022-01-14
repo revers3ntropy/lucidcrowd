@@ -4,6 +4,8 @@ const {test, expect} = require('../test.js');
 const fetch = require('axios');
 const fs = require("fs");
 
+const n = 5;
+
 const api = async (path='', body={}) => {
     try {
         const res = await fetch.post(`http://localhost:56786/${path}`, body);
@@ -37,7 +39,7 @@ async function startBackend () {
     }
 }
 
-async function generateUsers (n) {
+async function generateUsers () {
     const sessions = [];
 
     for (let i = 0; i < n; i++) {
@@ -86,6 +88,25 @@ async function validateInvalidSessions (sessions) {
     }
 }
 
+async function logBackIn () {
+    const sessions = [];
+
+    for (let i = 0; i < n; i++) {
+        const res = await api('open-session', {
+            username: 'user' + i,
+            password: 'password' + i
+        });
+
+        const session = res['session-id'];
+
+        expect(!!session).toBe(true);
+
+        sessions.push(session);
+    }
+
+    return sessions;
+}
+
 async function cleanUp (sessions) {
     let i = 0;
     for (const session of sessions) {
@@ -95,7 +116,7 @@ async function cleanUp (sessions) {
             password: 'password' + i
         });
 
-        expect(res['completed']).toBe(true);
+        expect(res).toEq({completed: true});
         i++;
     }
     // kill server
@@ -104,20 +125,20 @@ async function cleanUp (sessions) {
 
 
 async function invalidUser () {
-    const badUsernameRes = await api('create-account', {
+    const res = await api('create-account', {
         username: 'user0',
         password: 'password'
     });
-    expect(badUsernameRes['session-id']).toBe(undefined);
-    expect(badUsernameRes['error']).toHaveType('string');
+    expect(res['session-id']).toBe(undefined);
+    expect(res['error']).toHaveType('string');
 }
 
 function clearLog () {
     fs.truncateSync('server/log.txt', 0);
-    expect(fs.readFileSync('server/log.txt')).toEq('');
+    expect(fs.readFileSync('server/log.txt').toString()).toEq('');
 }
 
-function serverRunning () {
+async function serverRunning () {
     expect( (await api())['ok'] )
         .toBe(true);
 }
@@ -128,11 +149,14 @@ test(async () => {
     await startBackend();
     await serverRunning();
 
-    const sessions = await generateUsers(5);
+    let sessions = await generateUsers();
 
+    await invalidUser();
     await validateSessions(sessions);
     await inValidateSessions(sessions);
     await validateInvalidSessions(sessions);
+
+    sessions = await logBackIn();
 
     await cleanUp(sessions);
     return true;

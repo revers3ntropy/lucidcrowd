@@ -89,7 +89,7 @@ def open_session():
     if not valid:
         return u.wrap_cors_header(body)
 
-    cursor.excecute("""
+    cursor.execute("""
         SELECT id 
         FROM users 
         WHERE 
@@ -98,9 +98,9 @@ def open_session():
         """, (body['username'], body['password'])
                     )
 
-    user_id = cursor.fetchone()[0]
+    user_id = cursor.fetchone()
 
-    if not user_id:
+    if not user_id or not user_id[0]:
         return u.wrap_cors_header({
             'valid': False,
             'session-id': 0,
@@ -123,7 +123,7 @@ def open_session():
         INSERT INTO sessions
         (id, userid)
         VALUES (%s, %s)
-    """, (user_id, sess_id))
+    """, (user_id[0], sess_id))
 
     db.commit()
 
@@ -232,24 +232,26 @@ def valid_session():
         'remaining': remaining
     })
 
+
 @app.route("/invalidate-session", methods=['POST'])
 def invalidate_session():
     body, valid = u.get_body(request, 'session-id')
     if not valid:
         return u.wrap_cors_header(body)
 
-    valid, _, remaining = u.valid_session(body['session-id'])
+    valid, _, _ = u.valid_session(body['session-id'])
 
     if not valid:
+        u.log('invalid session to invalidate')
         return u.wrap_cors_header({
             'completed': False
         })
 
-    cursor.excecute("""
-        UPDATE sessions WHERE id=%s SET timeoutthing = 0
-    """)
+    cursor.execute("""
+        UPDATE sessions SET valid = 0 WHERE id = %s
+    """, (body['session-id'], ))
 
-    db.commit();
+    db.commit()
 
     return u.wrap_cors_header({
         'completed': True

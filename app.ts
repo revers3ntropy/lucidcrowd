@@ -1,6 +1,3 @@
-// TS
-import './types.d.ts';
-
 // LESS
 import './styles/main.less';
 import './styles/fonts.less';
@@ -8,7 +5,7 @@ import './styles/animation.less';
 
 // ALPINE
 // alpine types. Alpine object is already a property of window
-import type Alpine from 'alpinejs';
+import Alpine from 'alpinejs';
 import 'alpinejs';
 
 const STAGING = !!window.location.href.match(/https:\/\/staging.lucidcrowd.uk(\/.*)*$/)
