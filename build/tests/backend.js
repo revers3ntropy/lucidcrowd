@@ -6,6 +6,8 @@ const fs = require("fs");
 
 const n = 5;
 
+let sessions = [];
+
 const api = async (path='', body={}) => {
     try {
         const res = await fetch.post(`http://localhost:56786/${path}`, body);
@@ -19,7 +21,12 @@ function sleep (ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function startBackend () {
+test('clear log', () => {
+    fs.truncateSync('server/log.txt', 0);
+    expect(fs.readFileSync('server/log.txt').toString()).toEq('');
+});
+
+test('start backend server', async () => {
     run(`
         . server/venv/bin/activate;
         cd ./server/;
@@ -37,11 +44,14 @@ async function startBackend () {
             }
         } catch (e) {}
     }
-}
+});
 
-async function generateUsers () {
-    const sessions = [];
+test('server is running', async () => {
+    expect( (await api())['ok'] )
+        .toBe(true);
+});
 
+test('generate users', async () => {
     for (let i = 0; i < n; i++) {
         const res = await api('create-account', {
             username: 'user' + i,
@@ -54,21 +64,29 @@ async function generateUsers () {
 
         sessions.push(session);
     }
+});
 
-    return sessions;
-}
+test('invalid user creation', async () => {
+    const res = await api('create-account', {
+        username: 'user0',
+        password: 'password'
+    });
+    expect(res['session-id']).toBe(undefined);
+    expect(res['error']).toHaveType('string');
+});
 
-async function validateSessions (sessions) {
+test('validate sessions', async () => {
     for (const session of sessions) {
         const res = await api('valid-session', {
             'session-id': session
         });
 
+        expect(res).toHaveKeys(['valid', 'remaining']);
         expect(res['valid']).toBe(true);
     }
-}
+});
 
-async function inValidateSessions (sessions) {
+test('invalidate currently valid sessions', async () => {
     for (const session of sessions) {
         const res = await api('invalidate-session', {
             'session-id': session
@@ -76,9 +94,9 @@ async function inValidateSessions (sessions) {
 
         expect(res['completed']).toBe(true);
     }
-}
+});
 
-async function validateInvalidSessions (sessions) {
+test('validate currently invalid sessions', async () => {
     for (const session of sessions) {
         const res = await api('valid-session', {
             'session-id': session
@@ -86,11 +104,9 @@ async function validateInvalidSessions (sessions) {
 
         expect(res['valid']).toBe(false);
     }
-}
+});
 
-async function logBackIn () {
-    const sessions = [];
-
+test('log back in', async () => {
     for (let i = 0; i < n; i++) {
         const res = await api('open-session', {
             username: 'user' + i,
@@ -99,65 +115,26 @@ async function logBackIn () {
 
         const session = res['session-id'];
 
+        expect(res).toHaveKeys(['session-id']);
         expect(!!session).toBe(true);
+        expect(session).toHaveType('string');
 
-        sessions.push(session);
+        sessions[i] = session;
     }
+});
 
-    return sessions;
-}
-
-async function cleanUp (sessions) {
+test('clean up', async () => {
     let i = 0;
     for (const session of sessions) {
         const res = await api('delete-account', {
-            'session-id': session,
-            username: 'user' + i,
-            password: 'password' + i
+            'session-id': session
         });
 
         expect(res).toEq({completed: true});
         i++;
     }
-    // kill server
+});
+
+test('kill server', async () => {
     await run('sudo pkill gunicorn');
-}
-
-
-async function invalidUser () {
-    const res = await api('create-account', {
-        username: 'user0',
-        password: 'password'
-    });
-    expect(res['session-id']).toBe(undefined);
-    expect(res['error']).toHaveType('string');
-}
-
-function clearLog () {
-    fs.truncateSync('server/log.txt', 0);
-    expect(fs.readFileSync('server/log.txt').toString()).toEq('');
-}
-
-async function serverRunning () {
-    expect( (await api())['ok'] )
-        .toBe(true);
-}
-
-test(async () => {
-    clearLog();
-
-    await startBackend();
-    await serverRunning();
-
-    let sessions = await generateUsers();
-
-    await invalidUser();
-    await validateSessions(sessions);
-    await inValidateSessions(sessions);
-    await validateInvalidSessions(sessions);
-
-    sessions = await logBackIn();
-
-    await cleanUp(sessions);
-    return true;
 });

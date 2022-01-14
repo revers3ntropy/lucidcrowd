@@ -67,7 +67,7 @@ def gen_salt(chars, length):
 def valid_session(session):
     """
     :param session:
-    :return: (valid: bool, userid: int, session_time_remaining: int)
+    :return: (valid: bool, userid: string, session_time_remaining: int)
     """
     cursor.execute(
         """
@@ -76,7 +76,8 @@ def valid_session(session):
                     (UNIX_TIMESTAMP(sessions.created) + sessions.expires) - 
                     UNIX_TIMESTAMP(CURRENT_TIMESTAMP)
                 ),
-                users.id
+                users.id,
+                sessions.valid
             FROM sessions, users
             WHERE 
                 sessions.id = (%s) AND
@@ -87,10 +88,10 @@ def valid_session(session):
 
     res = cursor.fetchall()
 
-    if not res or not (len(res) > 0 and res[0][0] > 0):
+    if not res or not len(res) > 0 or not len(res[0][1]) > 0 or not res[0][2]:
         return False, 0, 0
 
-    return True, int(res[0][1]), int(res[0][0])
+    return True, str(res[0][1]), int(res[0][0])
 
 
 def reputation_user():

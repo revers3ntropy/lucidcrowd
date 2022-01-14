@@ -21,6 +21,7 @@ window.WEB_ROOT = WEB_ROOT;
 window.API_PORT = API_PORT;
 window.SESSION_ID = SESSION_ID;
 window.SERVER_URL = SERVER_URL;
+window.Alpine = Alpine;
 
 Alpine.store('theme', {
     init () {

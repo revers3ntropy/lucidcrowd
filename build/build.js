@@ -33,7 +33,6 @@ const {failed} = require("./test");
 const
 	HEAD = fs.readFileSync('./header.html'),
 	FOOT = fs.readFileSync('./footer.html'),
-	GITHUB_TOK = fs.readFileSync('./build/github_token.txt'),
 	STAGING = !process.argv.includes('--prod'),
 	timings = {
 		'Compile TS': 0,
@@ -80,7 +79,6 @@ async function buildHTML (dir) {
 			html = `
 				${HEAD}
 				${fs.readFileSync(fullPath)}
-				${FOOT}
 			`;
 		}
 
@@ -136,7 +134,7 @@ async function buildHTML (dir) {
 	// main.ts, main.less
 	js = '<script>' + MAIN + '</script>' + js;
 
-	const final = minifyHTML(html + css + js, {
+	const final = minifyHTML(html + css + js + FOOT, {
 		removeAttributeQuotes: false,
 		removeComments: true,
 		removeRedundantAttributes: false,
@@ -196,7 +194,6 @@ async function upload () {
 	}
 
 	console.log(chalk.green('Finished Uploading'));
-
 
 	timings['Upload'] = now() - start;
 }

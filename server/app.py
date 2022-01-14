@@ -73,7 +73,7 @@ def create_account():
     cursor.execute("""
         INSERT INTO users
          (id,   username,         password,               salt) VALUES 
-         (%s,   %s,               MD5(CONCAT(%s, %s)),    %s)
+         (%s,   %s,               SHA2(CONCAT(%s, %s), 256), %s)
     """, (uuid, body['username'], salt, body['password'], salt))
 
     db.commit()
@@ -103,7 +103,6 @@ def open_session():
     if not user_id or not user_id[0]:
         return u.wrap_cors_header({
             'valid': False,
-            'session-id': 0,
             'error': 'Invalid Login'
         })
 
@@ -112,10 +111,9 @@ def open_session():
     sess_id = cursor.fetchone()[0]
 
     if not sess_id:
-        print(f'INVALID SESSION ID GENERATED: {sess_id}')
+        u.log(f'INVALID SESSION ID GENERATED: {sess_id}')
         return u.wrap_cors_header({
             'valid': False,
-            'session-id': 0,
             'error': 'Session could not be generated. This error has been logged.'
         })
 
@@ -123,7 +121,7 @@ def open_session():
         INSERT INTO sessions
         (id, userid)
         VALUES (%s, %s)
-    """, (user_id[0], sess_id))
+    """, (sess_id, user_id[0]))
 
     db.commit()
 

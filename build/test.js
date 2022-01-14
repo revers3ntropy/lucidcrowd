@@ -2,10 +2,10 @@ const fs = require('fs');
 const chalk = require('chalk');
 
 /**
- * @type {(()=>Promise<true|string>)[]}
+ * @type {[string, (()=>Promise<true|string>)[]]}
  */
 const tests = [
-    () => tests.length > 1 || 'No tests loaded',
+    ['tests loaded', async () => tests.length > 1 || 'No tests loaded'],
 ];
 
 function stringify (s) {
@@ -120,20 +120,24 @@ function deepCompare () {
 
 /**
  * Add test to be run
- * @param cb
+ * @param {string} description
+ * @param {() => Promise<true|string>} cb
  */
-exports.test = (cb) => {
-    tests.push(cb);
+exports.test = (description, cb) => {
+    tests.push([description, cb]);
 };
+
+let currentTest = '';
 
 function test (cb) {
     return (val2) => {
         const res = cb(val2);
         if (res !== true) {
-            fails.push(res);
+            fails.push(currentTest + ': ' + res);
         } else {
             passes++;
         }
+        return res;
     }
 }
 
@@ -153,7 +157,13 @@ exports.expect = (val1) => {
             val1 < val2 || `'${stringify(val1)}' was expected to not equal '${stringify(val2)}'`),
         toHaveType: test((type) =>
             (typeof val1 === type) || `'${stringify(val1)}' was expected to be of type '${stringify(type)}'`),
-
+        to: test(val2 => val2(val1)),
+        toHaveKeys: test(keys => {
+            for (let key of keys) {
+                if (!val1.hasOwnProperty(key)) return `'${stringify(val1)}' expected to have keys [${keys}]`;
+            }
+            return true;
+        })
     };
 };
 
@@ -165,9 +175,15 @@ exports.testAll = async () => {
         .forEach(file => void require("./tests/" + file));
 
     for (const test of tests) {
-        const res = await test();
-        if (res !== true) {
-            fails.push(res);
+        currentTest = test[0];
+        let res;
+        try {
+            res = await test[1]();
+        } catch (e) {
+            res = e;
+        }
+        if (res !== true && res !== undefined) {
+            fails.push(currentTest + ': ' + res.toString());
         } else {
             passes++;
         }
