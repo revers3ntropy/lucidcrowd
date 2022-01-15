@@ -9,16 +9,12 @@ const tests = [
 ];
 
 function stringify (s) {
-    switch (typeof s) {
-        case 'undefined':
-            return 'Undefined';
-        case 'object':
-            try {
-                return JSON.stringify(s);
-            } catch (e) {}
-        default:
-            return s.toString();
+    if (typeof s === 'object') {
+        try {
+            return JSON.stringify(s);
+        } catch (e) {}
     }
+    return s.toString();
 }
 
 function deepCompare () {

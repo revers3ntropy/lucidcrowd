@@ -22,8 +22,8 @@ const API_PORT = 56787;
 const run = async (cmd) => {
 	return new Promise((e) => {
 		exec(cmd, (error, stdout, stderr) => {
-			if (error) throw error;
-			if (stdout) console.error(stdout);
+			if (error) console.log(error);
+			if (stdout) console.log(stdout);
 			if (stderr) console.error(stderr);
 			e();
 		});
@@ -120,8 +120,9 @@ async function webpackBundleWatcher () {
 	});
 
 	watcher.on('change', async p => {
-		console.log('change in ' + p + '. Rebuilding WebPack Bundle')
+		console.log('change in ' + p + '. Rebuilding WebPack Bundle...')
 		await buildWebpack();
+		console.log('Rebuilding with new bundle...');
 		await buildHTML('', true, true, MAIN, {}, true);
 		console.log('Finished rebuilding Webpack Bundle');
 	});

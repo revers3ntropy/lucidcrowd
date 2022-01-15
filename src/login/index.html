@@ -1,18 +1,16 @@
 <main>
-    <div x-data="{ username: '', password: '' }">
-        <label>
-            Username
-            <input x-model="username">
-        </label>
-        <br>
-        <label>
-            Password
-            <input x-model="password">
-        </label><br>
-        <div id="buttons">
-            <button onclick="">Login</button>
-            <button onclick="">Create Account</button>
+    <div id="form-container">
+        <div id='form' x-data="$store.main">
+            <label>
+                <input x-model="username" placeholder="username">
+            </label>
+            <br>
+            <label>
+                <input x-model="password" placeholder="password">
+            </label><br>
+            <button @click="signIn(username, password)">Sign In</button>
+            <button @click="createAccount(username, password)">Create Account</button>
+            <div id=error x-text="error"></div>
         </div>
-
     </div>
 </main>

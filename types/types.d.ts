@@ -7,7 +7,7 @@ declare global {
         isSignedIn: () => Promise<boolean>;
         requireAuth: () => Promise<void>;
         api: (path: string, body: {[s: string]: any}) =>
-            Promise<{error?: string, res: {[s: string]: any}}>;
+            Promise<{error?: string} | any>;
 
         STAGING: boolean;
         DEV: boolean;
@@ -17,5 +17,3 @@ declare global {
         SERVER_URL: string;
     }
 }
-
-declare const Alpine: any;

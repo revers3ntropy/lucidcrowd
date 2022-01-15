@@ -1,9 +1,6 @@
-import '../../types/types';
+import type {} from '../../types/types';
 
-import Alpine from 'alpinejs';
-import 'alpinejs';
-
-Alpine.store('leaderboard', {
+window.Alpine.store('leaderboard', {
     data: [],
     options: {
         top: 10

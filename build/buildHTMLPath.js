@@ -35,6 +35,10 @@ exports.buildHTML = async (dir, QUIET, STAGING, MAIN, timings={}, recursive=true
 	let subDirTime = 0;
 
 	for (const path of paths) {
+		if (path[path.length-1] === '~') {
+			// is a backup file that will get deleted automatically by IDE
+			continue;
+		}
 		const fullPath = p.join('./src', dir, path);
 
 		if (fs.statSync(fullPath).isDirectory()) {
@@ -68,7 +72,7 @@ exports.buildHTML = async (dir, QUIET, STAGING, MAIN, timings={}, recursive=true
 		else if (path === 'index.ts') {
 			const start = now();
 
-			await run (`tsc --outDir ${distPath} --esModuleInterop --typeRoots "./types" --lib "ES2018,DOM" ${fullPath} > ts_less_log.txt`);
+			await run (`tsc --esModuleInterop --outDir ${distPath} --moduleResolution node --typeRoots "./types" --module ES6 --lib "ES2018,DOM" ${fullPath} > ts_less_log.txt`);
 			if (!fs.existsSync(`${distPath}/index.js`)) {
 				console.log(chalk.red`FILE '${distPath}/index.js' REQUIRED!`);
 				continue;
