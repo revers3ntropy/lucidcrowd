@@ -1,5 +1,5 @@
-const {run} = require('../utils.js');
-const {test, expect} = require('../test.js');
+const {run} = require('../build/utils.js');
+const {test, expect} = require('../build/test.js');
 
 const fetch = require('axios');
 const fs = require("fs");

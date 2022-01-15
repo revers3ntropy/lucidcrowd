@@ -12,16 +12,10 @@
  */
 
 // utils
-//const whyRunning = require('why-is-node-running');
 const fs = require('fs');
-const p = require('path');
-const {run} = require('./utils.js');
+const {run, sortObjectEntries} = require('./utils');
 const performanceNow = require("performance-now");
 const now = () => Math.round(performanceNow());
-
-// uglify
-const minifyHTML = require('html-minifier').minify;
-const uglifyJS = require('uglify-js').minify;
 
 // beatify
 const chalk = require('chalk');
@@ -29,10 +23,9 @@ const Confirm = require('prompt-confirm');
 
 const {testAll, testResStr} = require('./test.js');
 const {failed} = require("./test");
+const {buildHTML} = require('./buildHTMLPath');
 
 const
-	HEAD = fs.readFileSync('./header.html'),
-	FOOT = fs.readFileSync('./footer.html'),
 	STAGING = !process.argv.includes('--prod'),
 	timings = {
 		'Compile TS': 0,
@@ -48,111 +41,6 @@ if (process.argv.indexOf('--silent') !== -1) {
 }
 
 let MAIN = '';
-
-/**
- * @param {string} dir
- * @returns {Promise<number>}
- */
-async function buildHTML (dir) {
-	if (!QUIET) console.log(`Building HTML at '${dir}'`);
-	const start = now();
-
-	const paths = fs.readdirSync('./src/' + dir);
-
-	const distPath = p.join('./dist/public_html' + (STAGING ? '/staging' : ''), dir);
-
-	let html = '';
-	let css = '';
-	let js = '';
-
-	let subDirTime = 0;
-
-	for (const path of paths) {
-		const fullPath = './src' + dir + "/" + path;
-
-		if (fs.statSync(fullPath).isDirectory()) {
-			subDirTime += await buildHTML(dir + "/" + path);
-			continue;
-		}
-
-		if (path === 'index.html') {
-			html = `
-				${HEAD}
-				${fs.readFileSync(fullPath)}
-			`;
-		}
-
-		else if (path === 'index.less') {
-			const start = now();
-			await run (`lessc ${fullPath} ${distPath}/index.css > ts_less_log.txt`);
-			if (!fs.existsSync(`${distPath}/index.css`)) {
-				console.log(chalk.red`FILE '${distPath}/index.css' REQUIRED!`)
-				continue;
-			}
-			const fileContent = fs.readFileSync(`${distPath}/index.css`);
-			fs.unlinkSync(`${distPath}/index.css`);
-
-			css = '<style>' + fileContent + '</style>';
-			timings['Compile LESS'] += now() - start;
-		}
-
-		else if (path === 'index.ts') {
-			const start = now();
-
-			await run (`tsc --outDir ${distPath} --esModuleInterop --typeRoots "./types" --lib "ES2018,DOM" ${fullPath} > ts_less_log.txt`);
-			if (!fs.existsSync(`${distPath}/index.js`)) {
-				console.log(chalk.red`FILE '${distPath}/index.js' REQUIRED!`);
-				continue;
-			}
-			if (STAGING) {
-				// replace the port of the server with the staging one
-				await run(`sed -i 's/56786/56787/g' ${distPath}/index.js`);
-			}
-
-			const fileContent = String(fs.readFileSync(`${distPath}/index.js`));
-			fs.unlinkSync(`${distPath}/index.js`);
-
-			const minified = uglifyJS(fileContent, {});
-
-			if (minified.error) {
-				console.error(`UglifyJS error: ${minified.error}`);
-				return now() - start - subDirTime;
-			}
-			if (minified.warnings) {
-				console.log(minified.warnings);
-			}
-
-			js = '<script defer>' + minified.code + '</script>';
-			timings['Compile TS'] += now() - start;
-		}
-	}
-
-	if (!fs.existsSync(distPath) && html) {
-		fs.mkdirSync(distPath);
-	}
-
-	// main.ts, main.less
-	js = '<script>' + MAIN + '</script>' + js;
-
-	const final = minifyHTML(html + css + js + FOOT, {
-		removeAttributeQuotes: false,
-		removeComments: true,
-		removeRedundantAttributes: false,
-		removeScriptTypeAttributes: false,
-		removeStyleLinkTypeAttributes: false,
-		sortClassName: true,
-		useShortDoctype: true,
-		collapseWhitespace: true
-	});
-
-	fs.writeFileSync(distPath + '/index.html', final);
-
-	let time = now() - start - subDirTime;
-
-	timings[`'${distPath}' front-end path`] = time;
-
-	return time;
-}
 
 async function cpServer () {
 	const start = now();
@@ -196,23 +84,6 @@ async function upload () {
 	console.log(chalk.green('Finished Uploading'));
 
 	timings['Upload'] = now() - start;
-}
-
-//src: https://stackoverflow.com/questions/1069666/sorting-object-property-by-values
-function sortObjectEntries (obj) {
-	let sortable = [];
-	for (let vehicle in obj) {
-		sortable.push([vehicle, obj[vehicle]]);
-	}
-
-	sortable.sort((a, b) => a[1] - b[1]);
-
-	let objSorted = {}
-	sortable.forEach(function(item){
-		objSorted[item[0]] = item[1]
-	});
-
-	return objSorted
 }
 
 function logTimings () {
@@ -294,7 +165,7 @@ async function main () {
 		if (!QUIET) console.log('Building WebPack...');
 		await buildWebpack().catch(handleError);
 
-		await buildHTML('').catch(handleError);
+		await buildHTML('', QUIET, STAGING, MAIN, timings, true).catch(handleError);
 	}
 
 	if (process.argv.indexOf('--no-backend') === -1) {

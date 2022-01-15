@@ -9,14 +9,18 @@ import Alpine from 'alpinejs';
 import 'alpinejs';
 
 const STAGING = !!window.location.href.match(/https:\/\/staging.lucidcrowd.uk(\/.*)*$/)
+const DEV =
+    !!window.location.href.match(/http:\/\/localhost:([0-9]*)(\/.*)*$/) ||
+    !!window.location.href.match(/http:\/\/127.0.0.1:([0-9]*)(\/.*)*$/);
 
-const WEB_ROOT = `https://${STAGING ? 'staging.' : ''}lucidcrowd.uk`;
-const API_PORT = STAGING ? 56787 : 56786;
-const SERVER_URL = `https://lucidcrowd.uk:${API_PORT}`;
+const WEB_ROOT = DEV ? 'http://localhost:3000' : `https://${STAGING ? 'staging.' : ''}lucidcrowd.uk`;
+const API_PORT = (STAGING && !DEV) ? 56787 : 56786;
+const SERVER_URL = DEV ? 'http://localhost:56786' : `https://lucidcrowd.uk:${API_PORT}`;
 
 const SESSION_ID = sessionStorage.getItem('session-id') || '0';
 
 window.STAGING = STAGING;
+window.DEV = DEV;
 window.WEB_ROOT = WEB_ROOT;
 window.API_PORT = API_PORT;
 window.SESSION_ID = SESSION_ID;
@@ -87,7 +91,6 @@ window.isSignedIn = async () => {
     const res = await window.api('valid-session', {
         'session-id': SESSION_ID
     });
-    console.log(res);
 
     if (typeof res.res['valid'] !== 'boolean') {
         return false;
@@ -100,6 +103,5 @@ window.requireAuth = async () => {
     if (await window.isSignedIn()) {
         return;
     }
-
     window.location.assign(`${WEB_ROOT}/login?cb=${encodeURI(window.location.href)}`);
 };

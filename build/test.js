@@ -171,8 +171,8 @@ exports.expect = (val1) => {
  * @returns {Promise<void>}
  */
 exports.testAll = async () => {
-    fs.readdirSync('build/tests')
-        .forEach(file => void require("./tests/" + file));
+    fs.readdirSync('./tests')
+        .forEach(file => void require("../tests/" + file));
 
     for (const test of tests) {
         currentTest = test[0];

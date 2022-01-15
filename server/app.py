@@ -22,7 +22,6 @@ SALT_CHARS = os.getenv('SEC_SALTCHARS')
 
 # ROUTES
 
-
 @app.route("/", methods=['GET', 'POST'])
 def home():
     return u.wrap_cors_header({'ok': True})
