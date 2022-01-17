@@ -1,5 +1,4 @@
 import random
-import logging
 from os.path import exists
 
 from connectmysql import cursor
@@ -7,12 +6,9 @@ from connectmysql import cursor
 from flask import jsonify
 
 if exists('log.txt'):
-    logger = logging.getLogger()
-    handler = logging.FileHandler('log.txt')
-    logger.addHandler(handler)
-
-    def log(msg, lvl=1):
-        logger.log(lvl, msg)
+    def log(msg):
+        with open('log.txt', 'a') as f:
+            f.write('/n' + str(msg))
 
 else:
     log = print
@@ -25,7 +21,8 @@ def res_as_dict(columns):
     :param columns: list[string]
     :return: list[dict]
     """
-    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+    keys = columns.split(',')
+    return [dict(zip(keys, row)) for row in cursor.fetchall()]
 
 
 def get_body(request, structure):

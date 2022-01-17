@@ -161,30 +161,44 @@ def public_info():
 
 @app.route('/private-info', methods=['POST'])
 def private_info():
-    body, valid = u.get_body(request, 'session-id')
+    body, valid = u.get_body(request, 'session')
     if not valid:
         return u.wrap_cors_header(body)
 
+    valid, userid, _ = u.valid_session(body['session'])
+
+    if not valid:
+        return u.wrap_cors_header({
+            'error': 'invalid session id'
+        })
+
     cursor.execute("""
         SELECT 
-            username,
-            id
-            COUNT (
-                SELECT * 
-                FROM labels 
-                WHERE labels.userid = users.id
-            ) as labelcount
-        FROM 
-            users, labels
+            username
+        FROM
+            users
         WHERE
-            users.username = %s
-    """, (body['username'],))
+            id = %s
+    """, (userid,))
 
-    res = u.res_as_dict('username,id,labelcount')
+    basic_info = u.res_as_dict('username')
+
+    if len(basic_info) != 1:
+        return u.wrap_cors_header({
+            'error': 'invalid session id'
+        })
+
+    cursor.execute("""
+        SELECT labels.datumid, labels.value, labels.time
+        FROM labels
+        WHERE userid = %s
+    """, (userid,))
+
+    labels = u.res_as_dict('datumid,value,time')
 
     return u.wrap_cors_header({
-        'username': res['username'],
-        'label-count': res['labelcount']
+        'username': basic_info[0]['username'],
+        'labels': labels
     })
 
 

@@ -3,6 +3,7 @@ export {};
 declare global {
     interface Window {
         Alpine: any;
+        CalHeatMap: any;
 
         isSignedIn: () => Promise<boolean>;
         requireAuth: () => Promise<void>;
@@ -15,5 +16,8 @@ declare global {
         API_PORT: number;
         SESSION_ID: string;
         SERVER_URL: string;
+        setSessionID: (v: string) => void;
+        THEME: string;
+        onThemeChange: (cb: (...args: any[]) => any) => void;
     }
 }

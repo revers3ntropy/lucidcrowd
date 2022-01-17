@@ -4,6 +4,12 @@
 @transition: 200ms;
 @slow-transition: 400ms;
 
+/* for Alpine to work */
+[x-cloak] {
+    display: none !important;
+    opacity: 0 !important;
+}
+
 /* dark mode by default */
 :root, .dark {
     --bg: #232323;

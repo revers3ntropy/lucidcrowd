@@ -8,6 +8,11 @@ import './styles/animation.less';
 import Alpine from 'alpinejs';
 import 'alpinejs';
 
+// Calender heatmap (https://cal-heatmap.com/)
+import './node_modules/cal-heatmap/cal-heatmap.less';
+// @ts-ignore
+import * as CalHeatMap from './node_modules/cal-heatmap/cal-heatmap.js';
+
 const STAGING = !!window.location.href.match(/https:\/\/staging.lucidcrowd.uk(\/.*)*$/)
 const DEV =
     !!window.location.href.match(/http:\/\/localhost:([0-9]*)(\/.*)*$/) ||
@@ -18,6 +23,8 @@ const API_PORT = (STAGING || DEV) ? 56787 : 56786;
 const SERVER_URL = DEV ? 'http://localhost:56787' : `https://lucidcrowd.uk:${API_PORT}`;
 
 const SESSION_ID = sessionStorage.getItem('session-id') || '0';
+const setSessionID = (v: string) => sessionStorage.setItem('session-id', v);
+let THEME = localStorage.theme;
 
 window.STAGING = STAGING;
 window.DEV = DEV;
@@ -26,15 +33,28 @@ window.API_PORT = API_PORT;
 window.SESSION_ID = SESSION_ID;
 window.SERVER_URL = SERVER_URL;
 window.Alpine = Alpine;
+window.setSessionID = setSessionID;
+window.CalHeatMap = CalHeatMap.CalHeatMap;
+window.THEME = THEME;
+
+const onThemeChanges: ((...args: any[]) => any)[] = [];
+
+window.onThemeChange = (cb: (...args: any[]) => any) => void onThemeChanges.push(cb);
 
 Alpine.store('theme', {
     init () {
-        localStorage.theme ??= 'dark';
+        THEME ??= 'dark';
     },
-    value: localStorage.theme,
+    value: THEME,
     toggle () {
         localStorage.theme = this.value === 'dark' ? 'light' : 'dark';
         this.value = localStorage.theme;
+        THEME = localStorage.theme;
+        window.THEME = THEME;
+
+        for (const cb of onThemeChanges) {
+            cb();
+        }
     }
 });
 
@@ -100,11 +120,11 @@ window.isSignedIn = async () => {
         'session-id': SESSION_ID
     });
 
-    if (typeof res.res['valid'] !== 'boolean') {
+    if (typeof res['valid'] !== 'boolean') {
         return false;
     }
 
-    return res.res['valid'];
+    return res['valid'];
 }
 
 window.requireAuth = async () => {

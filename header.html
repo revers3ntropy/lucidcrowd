@@ -33,13 +33,13 @@
 
     <div>
         <a
-            x-data
+            x-data x-cloak
             :href="$store.general.WEB_ROOT + '/@'"
             x-show="await window.isSignedIn()"
             x-html="$store.icons.account"
         ></a>
         <a
-            x-data
+            x-data x-cloak
             :href="$store.general.WEB_ROOT + '/login'"
             x-show="!(await window.isSignedIn())"
             x-html="$store.icons.account"

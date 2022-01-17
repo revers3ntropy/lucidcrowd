@@ -1,14 +1,20 @@
 <main x-data="{
-    username: new URLSearchParams(location.search).get('u')
+    u: new URLSearchParams(location.search).get('u')
 }">
 
-    <div x-show="!!username">
-        <h1 x-text="username" x-show="!!username"></h1>
+    <div x-show="!!u">
+        <h1 x-text="u" x-show="!!u"></h1>
     </div>
 
 
-    <div x-show="!username" x-data="await api('private-info', {session: SESSION_ID})">
-        <h1>You, <span x-data=""></span></h1>
+    <div x-show="!u" x-data="$store.userinfo" :load="$store.userinfo.refresh">
+        <h1>You, <span x-text="username"></span></h1>
     </div>
 
+    <div id="contributions-wrapper">
+        <h2>Contributions</h2>
+        <div id="contributions-heatmap-wrapper">
+            <div id="contributions-heatmap"></div>
+        </div>
+    </div>
 </main>

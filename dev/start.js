@@ -48,6 +48,8 @@ const WEBPACK_PATHS = ['./footer.html', 'header.html', 'types', 'app.ts', 'style
 
 async function startServer () {
 	await (new Promise(async resolve => {
+		await run ('sudo pkill gunicorn');
+
 		run(`
 			. ./server/venv/bin/activate;
 			cd server;
